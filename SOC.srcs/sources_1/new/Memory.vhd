@@ -21,6 +21,8 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -39,7 +41,7 @@ end Memory;
 
 architecture Behavioral of Memory is
      type rom_type is array (2**16-1 downto 0) of std_logic_vector (40 downto 0);     
-     constant ROM_array : rom_type:= ((others=> (others=>'0')));
+     signal ROM_array : rom_type:= ((others=> (others=>'0')));
      
      type memory_type is array (31 downto 0) of std_logic_vector(49 downto 0);
      signal memory : memory_type :=(others => (others => '0'));   --memory for queue.
@@ -49,53 +51,54 @@ begin
     
   process (Clock)
     variable tmplog: std_logic_vector(51 downto 0);
-    variable enr: boolean:=0;
-    variable enw: boolean:=1; 
+    variable enr: boolean:=false;
+    variable enw: boolean:=true; 
     variable address: integer;
-    variable flag: boolean:=0;
+    variable flag: boolean:=false;
+    variable nada: std_logic_vector(49 downto 0) :=(others=>'0');
     begin
     if (rising_edge(Clock)) then
-        if req/=(others => '0') then
-            if enw=1 then
+        if req/=nada then
+            if enw=true then
                 memory(conv_integer(writeptr)) <= req;
                 writeptr <= writeptr + '1';
-                enr<=1;
+                enr:=true;
                 --writeptr loops
                 if(writeptr = "11111") then       
                      writeptr <= "00000";
                 end if;
                 --check if full
-                if(writeptf=readptr) then
-                     enw<=0;
+                if(writeptr=readptr) then
+                     enw:=false;
                 end if; 
                 --send fifo full message
-              elsif enw=0 then
+              elsif enw=false then
                      res<="11"&req(47 downto 0);
               end if;
         end if;
        
-        if (enr=1 and flag=0) then
-                tmplog<= memory(conv_integer(readptr));
+        if (enr=true and flag=false) then
+                tmplog:= memory(conv_integer(readptr));
                 readptr <= readptr + '1';  
                 if(readptr = "11111") then      --resetting read pointer.
                      readptr <= "00000";
                 end if;
-                if(writeptf=readptr) then
-                     enr<=0;
+                if(writeptr=readptr) then
+                     enr:=false;
                 end if;
                 
-                address:=to_int(unsigned(tmplog(47 downto 32)));
+                address:=conv_integer(tmplog(47 downto 32));
                 --regular request
                 if tmplog(49 downto 48)="00" or tmplog(49 downto 48)="01" then 
-                    req<=tmplog(49 downto 32)&ROM_array(address);
-                    flag:=1;
+                    res<=tmplog(49 downto 32)&ROM_array(address);
+                    flag:=true;
                 --write back request 
                 elsif tmplog(49 downto 48)="11" then  
-                    ROM_array(address):=tmplog(31 downto 0);
+                    ROM_array(address)<=tmplog(31 downto 0);
                 end if;  
           --wait for one cycle not doing anything
-          elsif flag=1 then
-                flag:=0;
+          elsif flag=true then
+                flag:=false;
         end if;
 
          --find the corresponding data in memeory

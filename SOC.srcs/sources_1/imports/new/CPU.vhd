@@ -38,8 +38,8 @@ entity CPU is
     Port ( 
            Clock: in std_logic;
            seed: in integer;
-           cpu_res: in std_logic_vector(51 downto 0):= (others => 'X');
-           cpu_req : out std_logic_vector(51 downto 0)
+           cpu_res: in std_logic_vector(49 downto 0):= (others => 'X');
+           cpu_req : out std_logic_vector(49 downto 0)
            );
 end CPU;
 
@@ -67,7 +67,7 @@ begin
           end if;
           
           if cpu_res/=(others=>'X') then
-            cmd:=to_int(unsigned(cpu_res(51 downto 50)));
+            cmd:=to_int(unsigned(cpu_res(49 downto 48)));
             if(cmd=0) then
                 readsucc:=readsucc+1;
             elsif cmd=1 then

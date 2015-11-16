@@ -38,6 +38,7 @@ entity AXI is
             cache_req2: in STD_LOGIC_VECTOR(49 downto 0):= (others => '0');
             cache_hit1: in boolean;
             cache_hit2: in boolean;
+            snoop_res1,snoop_res2: in STD_LOGIC_VECTOR(49 downto 0);
             memres: in STD_LOGIC_VECTOR(49 downto 0);
             
             
@@ -58,60 +59,62 @@ begin
     
   process (Clock)
     variable tmplog: std_logic_vector(51 downto 0);
-    variable enr: boolean:=0;
-    variable enw: boolean:=1; 
+    variable enr: boolean:=false;
+    variable enw: boolean:=true; 
     variable address: integer;
-    variable flag: boolean:=0;
+    variable flag: boolean:=false;
+    variable nada: std_logic_vector(49 downto 0):=(others=>'0');
     begin
     if (rising_edge(Clock)) then
-        if cache_req1/=(others => '0') then
-          if enw=1 then
+        if cache_req1/=nada then
+          if enw=true then
             memory(conv_integer(writeptr)) <= "00"&cache_req1;
             writeptr <= writeptr + '1';
-            enr<=1;
+            enr:=true;
             --writeptr loops
             if(writeptr = "11111") then       
                 writeptr <= "00000";
             end if;
             --check if full
-            if(writeptf=readptr) then
-                enw<=0;
+            if(writeptr=readptr) then
+                enw:=false;
             end if; 
         --send fifo full message
-         elsif enw=0 then
+         elsif enw=false then
             res<="11"&cache_req1(47 downto 0);
-         end if;--if enw=1;
+         end if;--if enw=true;
         end if;--if req1='00000'
         
-        
-        if memres/=(others => '0') then
-                  if enw=1 then
+        if memres/=nada then
+                  if enw=true then
                     memory(conv_integer(writeptr)) <= "01"&memres;
                     writeptr <= writeptr + '1';
-                    enr<=1;
+                    enr:=true;
                     --writeptr loops
                     if(writeptr = "11111") then       
                         writeptr <= "00000";
                     end if;
                     --check if full
-                    if(writeptf=readptr) then
-                        enw<=0;
+                    if(writeptr=readptr) then
+                        enw:=false;
                     end if; 
                 --send fifo full message
-                 elsif enw=0 then
+                 elsif enw=false then
                     res<="11"&memres(47 downto 0);
-                 end if;--if enw=1;
+                 end if;--if enw=true;
                 end if;--if req1='00000'
-        if (enr=1) then
-            tmplog<= memory(conv_integer(readptr));
-            readptr <= readptr + '1';  
+        if (enr=true) then
+            tmplog:= memory(conv_integer(readptr));
+            readptr := readptr + '1';  
             if(readptr = "11111") then      --resetting read pointer.
                 readptr <= "00000";
             end if;
-            if(writeptf=readptr) then
-                enr<=0;
+            if(writeptr=readptr) then
+                enr:=false;
             end if;
             --this is assuming with just 1 cpu
+            if tmplog(51 downto 50)="00" then
+            end if;
             tomem<=tmplog(49 downto 0);
         end if; --if enr=1
       end if;--rising clck

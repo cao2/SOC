@@ -76,7 +76,7 @@ architecture Behavioral of L1Cache is
 --cache hold valid bit ,dirty bit, exclusive bit, 4 bits tag, 32 bits data, 39 bits in total
 --****
       type rom_type is array (2**10-1 downto 0) of std_logic_vector (40 downto 0);     
-      constant ROM_array : rom_type:= ((others=> (others=>'0')));
+      signal ROM_array : rom_type:= ((others=> (others=>'0')));
          --create fifo that can hold 32 task
          --first two digit indicate source of packet
       type memory_type is array (31 downto 0) of std_logic_vector(51 downto 0);
@@ -88,28 +88,31 @@ begin
     variable req_cmd: integer;
     variable cache_bits: std_logic_vector(2 downto 0);
     variable tmplog: std_logic_vector(51 downto 0);
-    variable enr: boolean:=0;
-    variable enw: boolean:=1;
+    variable enr: boolean:=false;
+    variable enw: boolean:=true;
+    variable nilmem: std_logic_vector(31 downto 0):=(others=>'0');
+    variable nilbit: std_logic_vector(0 downto 0):=(others=>'0');
+    variable memcont:std_logic_vector(31 downto 0);
   	begin   
 	    if rising_edge(Clock) then   
 	    --deal with  request first
 	    --is it how i should compare?
 	    --00+request
            if req/=(others => 'X') then
-                if enw=1 then
+                if enw=true then
                     memory(conv_integer(writeptr)) <= "00"&req;
                     writeptr <= writeptr + '1';
-                    enr<=1;
+                    enr:=true;
                     --writeptr loops
                     if(writeptr = "11111") then       
                         writeptr <= "00000";
                     end if;
                     --check if full
-                    if(writeptf=readptr) then
-                        enw<=0;
+                    if(writeptr=readptr) then
+                        enw:=false;
                     end if; 
                 --send fifo full message
-                elsif enw=0 then
+                elsif enw=false then
                     res<="11"&req(47 downto 0);
                 end if;
                 --if it's not there
@@ -118,63 +121,64 @@ begin
             
             --recieving response from bus
             if bus_res/=(others => 'X') then
-                    if enw=1 then
+                    if enw=true then
                            memory(conv_integer(writeptr)) <= "01"&bus_res;
                            writeptr <= writeptr + '1';
-                           enr<=1;
+                           enr:=true;
                            --writeptr loops
                            if(writeptr = "11111") then       
                                   writeptr <= "00000";
                            end if;
                            --check if full
-                           if(writeptf=readptr) then
-                                 enw<=0;
+                           if(writeptr=readptr) then
+                                 enw:=false;
                            end if; 
                           --send fifo full message
-                    elsif enw=0 then
+                    elsif enw=false then
                           res<="11"&bus_res(47 downto 0);
                     end if;
             end if;--end if bus_res/= 
             
             if snoop_req/=(others => 'X') then
-                    if enw=1 then
+                    if enw=true then
                            memory(conv_integer(writeptr)) <= "11"&snoop_req;
                            writeptr <= writeptr + '1';
-                           enr<=1;
+                           enr:=true;
                            --writeptr loops
                            if(writeptr = "11111") then       
                                   writeptr <= "00000";
                            end if;
                            --check if full
-                           if(writeptf=readptr) then
-                                 enw<=0;
+                           if(writeptr=readptr) then
+                                 enw:=false;
                            end if; 
                           --send fifo full message
-                    elsif enw=0 then
+                    elsif enw=false then
                           res<="11"&snoop_req(47 downto 0);
                     end if;
             end if;--end if snoop_req/= 
        -----done with add to fifo 
        -----start read one from fifo
-       if (enr=1) then
-            tmplog<= memory(conv_integer(readptr));
+       if (enr=true) then
+            tmplog:= memory(conv_integer(readptr));
             readptr <= readptr + '1';  
             if(readptr = "11111") then      --resetting read pointer.
                 readptr <= "00000";
             end if;
-            if(writeptf=readptr) then
-                enr<=0;
+            if(writeptr=readptr) then
+                enr:=false;
             end if;
-            req_index:= to_int(unsigned(tmplog(41 downto 32)));
-            req_cmd:= to_int(unsigned(tmplog(49 downto 48)));
+            req_index:= conv_integer(tmplog(41 downto 32));
+            req_cmd:= conv_integer(tmplog(49 downto 48));
+            
             --request from cpu
             if tmplog(51 downto 50)="00" then
-                if unsigned(ROM_array(req_index))=0 then
+                if ROM_array(req_index)= nilmem then
                     --send request to bus
                     bus_req<=tmplog(49 downto 0);
                                     
                 --if not valid
-                elsif unsigned(ROM_array(req_index)(40 downto 40))=0 then
+                elsif ROM_array(req_index)(40)='0' then
                     --send request to bus
                     bus_req<=tmplog(49 downto 0);
                                      
@@ -193,15 +197,17 @@ begin
                         res<="00"&tmplog(47 downto 32)&(ROM_array(req_index)(31 downto 0));
                         --if write from cpu
                     elsif req_cmd=1 then
-                        res<="01"&(others=>'0');
-                        ROM_array(req_index):="111"&tmplog(47 downto 42)&tmplog(31 downto 0);
+                        res<=(49=>'0', 48=>'1',others=>'0');
+                        ROM_array(req_index)<="111"&tmplog(47 downto 42)&tmplog(31 downto 0);
                     end if; --end of returning data to cpu or bus
                 end if;--end of finding data in array    
             
             --snoop request from bus
             elsif tmplog(51 downto 50)="11" then
                 --if can't find in cache memory, return can't find
-                if unsigned(ROM_array(req_index))=0 or unsigned(ROM_array(req_index)(40 downto 40))=0 or ROM_array(req_index)(37 downto 32)/=tmplog(47 downto 42) then
+                if ROM_array(req_index)=nilmem
+                or ROM_array(req_index)(40)='0'
+                or ROM_array(req_index)(37 downto 32)/=tmplog(47 downto 42) then
                       snoop_hit<=false;
                 --if cache hit, return the data to bus
                 else
@@ -217,30 +223,30 @@ begin
                     bus_req<="01"&tmplog(48 downto 0);
                 else
                     if req_cmd=0 then
-                        cache_bits<="100";
+                        cache_bits:="100";
                         --send read response to cpu
                         res<="00"&tmplog(47 downto 0);
                     elsif req_cmd=1 then
-                        cahce_bits<="111";
+                        cache_bits:="111";
                         --send write response to cpu
                         res<="01"&tmplog(48 downto 0);
                     end if;
                     ----put data in cache memory 
                 ---assum when get data for reading purpose, it's always shared cauz now we have no way of knowing
-                    if unsigned(ROM_array(req_index))=0 then
-                        ROM_array(req_index):=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
+                    if ROM_array(req_index)=nilmem then
+                        ROM_array(req_index)<=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
                 --if not valid
-                    elsif unsigned(ROM_array(req_index)(40 downto 40))=0 then
+                    elsif ROM_array(req_index)(40 downto 40)="0" then
                         --send request to bus
-                        ROM_array(req_index):=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
+                        ROM_array(req_index)<=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
                    --if tag doesn't match
                     --****is this how i should compare????????
                     elsif  ROM_array(req_index)(37 downto 32)/=tmplog(47 downto 42)then
                         ---issue an write bace
                         bus_req<="11"&tmplog(41 downto 32)&ROM_array(req_index)(37 downto 32)&tmplog(31 downto 0);    
-                        ROM_array(req_index):=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
+                        ROM_array(req_index)<=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
                     else
-                        ROM_array(req_index):=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
+                        ROM_array(req_index)<=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
                     end if;--req_indx=0
                     
                 end if;--if req_cmd=2

@@ -42,7 +42,8 @@ end top;
 architecture Behavioral of top is
    signal bus_res1, bus_res2,cpu_res1, cpu_res2, cpu_req1, cpu_req2,snoop_req1,snoop_req2: std_logic_vector (51 downto 0);
    signal snoop_hit1, snoop_hit2: boolean;
-   signal snoop_res1, snoop_res1, bus_req1, bus_req2, memres, tomem: std_logic_vector(49 downto 0);
+   signal snoop_res1, snoop_res1, bus_req1, bus_req2: std_logic_vector(49 downto 0);
+   signal  memres, tomem : std_logic_vector(50 downto 0);
 begin
     cpu1: CPU port map(
        Clock=>Clock,

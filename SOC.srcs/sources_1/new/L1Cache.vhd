@@ -21,9 +21,9 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use iEEE.std_logic_unsigned.all ;
+--use iEEE.std_logic_unsigned.all ;
 USE ieee.numeric_std.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
+--use IEEE.STD_LOGIC_ARITH.ALL;
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
@@ -49,26 +49,27 @@ entity L1Cache is
            --00 read response
            --01 write response
            --10,11 fifo full response
-           bus_res  : in  STD_LOGIC_VECTOR(49 downto 0):= (others => 'X');
+           bus_res  : in  STD_LOGIC_VECTOR(49 downto 0):= (others => '0');
            
     --output to cpu's request
     --oreq has the same type as of the req 
            --01: read response
            --10: write response
            --11: fifo full response
-           res : out STD_LOGIC_VECTOR(49 downto 0):= (others => 'X');
+           res : out STD_LOGIC_VECTOR(49 downto 0):= (others => '0');
     --output to bus's snoop request
            --01: read response
            --10: write response
            --11: fifo full response
            snoop_hit : out boolean;
-           snoop_res : out STD_LOGIC_VECTOR(49 downto 0):= (others => 'X');
+           snoop_res : out STD_LOGIC_VECTOR(49 downto 0):= (others => '0');
      --output to ask for bus
             --01: read request
             --10: write request
             --10,11: write back function
-           bus_req : out STD_LOGIC_VECTOR(49 downto 0):= (others => 'X'));
+           bus_req : out STD_LOGIC_VECTOR(49 downto 0):= (others => '0'));
 end L1Cache;
+
 architecture Behavioral of L1Cache is
 --IMB cache 1
 --3 lsb: dirty bit, valid bit, exclusive bit
@@ -81,8 +82,10 @@ architecture Behavioral of L1Cache is
          --first two digit indicate source of packet
       type memory_type is array (31 downto 0) of std_logic_vector(51 downto 0);
       signal memory : memory_type :=(others => (others => '0'));   --memory for queue.
-      signal readptr,writeptr : std_logic_vector(4 downto 0) :="00000";  --read and write pointers.
+      signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.
+
 begin
+
     process (Clock)
     variable req_index: integer;
     variable req_cmd: integer;
@@ -93,19 +96,20 @@ begin
     variable nilmem: std_logic_vector(31 downto 0):=(others=>'0');
     variable nilbit: std_logic_vector(0 downto 0):=(others=>'0');
     variable memcont:std_logic_vector(31 downto 0);
+    variable nilreq:std_logic_vector(49 downto 0):=(others => '0');
   	begin   
 	    if rising_edge(Clock) then   
 	    --deal with  request first
 	    --is it how i should compare?
 	    --00+request
-           if req/=(others => 'X') then
+           if req /= nilreq then
                 if enw=true then
-                    memory(conv_integer(writeptr)) <= "00"&req;
-                    writeptr <= writeptr + '1';
+                    memory(writeptr) <= "00"&req;
+                    writeptr <= writeptr + 1;
                     enr:=true;
                     --writeptr loops
-                    if(writeptr = "11111") then       
-                        writeptr <= "00000";
+                    if(writeptr = 31) then       
+                        writeptr <= 0;
                     end if;
                     --check if full
                     if(writeptr=readptr) then
@@ -120,14 +124,14 @@ begin
             end if;--end if req/=xx
             
             --recieving response from bus
-            if bus_res/=(others => 'X') then
+            if bus_res/=nilreq then
                     if enw=true then
-                           memory(conv_integer(writeptr)) <= "01"&bus_res;
-                           writeptr <= writeptr + '1';
+                           memory(writeptr) <= "01"&bus_res;
+                           writeptr <= writeptr + 1;
                            enr:=true;
                            --writeptr loops
-                           if(writeptr = "11111") then       
-                                  writeptr <= "00000";
+                           if(writeptr = 31) then       
+                                  writeptr <= 0;
                            end if;
                            --check if full
                            if(writeptr=readptr) then
@@ -139,14 +143,14 @@ begin
                     end if;
             end if;--end if bus_res/= 
             
-            if snoop_req/=(others => 'X') then
+            if snoop_req/=nilreq then
                     if enw=true then
-                           memory(conv_integer(writeptr)) <= "11"&snoop_req;
-                           writeptr <= writeptr + '1';
+                           memory(writeptr) <= "11"&snoop_req;
+                           writeptr <= writeptr + 1;
                            enr:=true;
                            --writeptr loops
-                           if(writeptr = "11111") then       
-                                  writeptr <= "00000";
+                           if(writeptr = 31) then       
+                                  writeptr <= 0;
                            end if;
                            --check if full
                            if(writeptr=readptr) then
@@ -160,16 +164,16 @@ begin
        -----done with add to fifo 
        -----start read one from fifo
        if (enr=true) then
-            tmplog:= memory(conv_integer(readptr));
-            readptr <= readptr + '1';  
-            if(readptr = "11111") then      --resetting read pointer.
-                readptr <= "00000";
+            tmplog:= memory(readptr);
+            readptr <= readptr + 1;  
+            if(readptr = 31) then      --resetting read pointer.
+                readptr <= 0;
             end if;
             if(writeptr=readptr) then
                 enr:=false;
             end if;
-            req_index:= conv_integer(tmplog(41 downto 32));
-            req_cmd:= conv_integer(tmplog(49 downto 48));
+            req_index:= to_integer(unsigned(tmplog(41 downto 32)));
+            req_cmd:= to_integer(unsigned(tmplog(49 downto 48)));
             
             --request from cpu
             if tmplog(51 downto 50)="00" then
@@ -178,7 +182,7 @@ begin
                     bus_req<=tmplog(49 downto 0);
                                     
                 --if not valid
-                elsif ROM_array(req_index)(40)='0' then
+                elsif ROM_array(req_index)(40) ='0' then
                     --send request to bus
                     bus_req<=tmplog(49 downto 0);
                                      

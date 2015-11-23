@@ -22,9 +22,8 @@
 library IEEE;
 library xil_defaultlib;
 use IEEE.STD_LOGIC_1164.ALL;
-use iEEE.std_logic_unsigned.all ;
 USE ieee.numeric_std.ALL;
-use xil_defaultlib.all;
+use nondeterminism.all;
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
@@ -43,14 +42,17 @@ entity CPU is
            );
 end CPU;
 
+
+
 architecture Behavioral of CPU is
- variable readsucc: integer :=0;
- variable writesucc: integer :=0;
- variable cmd: integer:=2;
+ 
 begin
 -- processor random generate read or write request
  p1 : process (Clock, random)
-     variable rand : integer := to_int(unsinged(random));
+     variable readsucc: integer :=0;
+     variable writesucc: integer :=0;
+     variable cmd: integer:=2;
+     variable rand : integer := to_integer(unsigned(random));
      --if rand1 is 1 then read request
      --if rand1 is 2 then write request
      variable rand1:integer:=selection(2);

@@ -34,19 +34,19 @@ use IEEE.std_logic_textio.all;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity CPU is
+entity CPU2 is
     Port ( 
            Clock: in std_logic;
            seed: in integer;
            cpu_res: in std_logic_vector(49 downto 0):= (others => '0');
            cpu_req : out std_logic_vector(49 downto 0)
            );
-end CPU;
+end CPU2;
 
 
 
-architecture Behavioral of CPU is
- signal yuting:boolean:=true;
+architecture Behavioral of CPU2 is
+       signal yuting:boolean:=true;
 begin
 -- processor random generate read or write request
  p1 : process (Clock)
@@ -67,11 +67,11 @@ begin
      variable rand2: std_logic_vector(15 downto 0):=selection(2**15-1,16);
      --generate the random content
      variable rand3: std_logic_vector(31 downto 0):=selection(2**15-1,32);
-
      begin
      if (rising_edge(Clock) and yuting=true) then
         yuting<=false;
           if (rand1 = 1) then
+          rand1:=5;
             cpu_req<="00"&rand2&empcot;
             logct:="00"&rand2&empcot;
                                  file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
@@ -81,6 +81,7 @@ begin
                                  writeline(logfile,linept);
                                  file_close(logfile);
           elsif (rand1 =2) then
+          rand1:=5;
             cpu_req<="01"&rand2&rand3;
             logct:="01"&rand2&rand3;
                                              file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);

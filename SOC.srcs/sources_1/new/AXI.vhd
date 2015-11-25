@@ -22,6 +22,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 USE ieee.numeric_std.ALL;
+use std.textio.all;
+use IEEE.std_logic_textio.all;          -- I/O for logic types
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -56,17 +58,24 @@ architecture Behavioral of AXI is
 --fifo has 53 bits
 --3 bits for indicating its source
 --50 bits for packet
-    type memory_type is array (31 downto 0) of std_logic_vector(52 downto 0);
+    type memory_type is array (31 downto 0) of std_logic_vector(53 downto 0);
     signal memory : memory_type :=(others => (others => '0'));   --memory for queue.
     signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.begin
  begin  
   process (Clock)
-    variable tmplog: std_logic_vector(52 downto 0);
+   file logfile: text;
+     variable linept:line;
+      variable logct: std_logic_vector(49 downto 0);
+      variable logct1: std_logic_vector(50 downto 0);
+        variable logsr: string(8 downto 1);
+  
+    variable tmplog: std_logic_vector(53 downto 0);
     variable enr: boolean:=false;
     variable enw: boolean:=true; 
     variable address: integer;
     variable flag: boolean:=false;
     variable nada: std_logic_vector(49 downto 0):=(others=>'0');
+    variable nadamem: std_logic_vector(50 downto 0):=(others=>'0');
     begin
     if (rising_edge(Clock)) then
     --cache request from cpu1: 000
@@ -79,7 +88,7 @@ architecture Behavioral of AXI is
     --                      miss:  111 
         if cache_req1/=nada then
           if enw=true then
-            memory(writeptr) <= "000"&cache_req1;
+            memory(writeptr) <= "0000"&cache_req1;
             writeptr <= writeptr + 1;
             enr:=true;
             --writeptr loops
@@ -92,12 +101,12 @@ architecture Behavioral of AXI is
             end if; 
         --send fifo full message
          elsif enw=false then
-            res1<="11"&cache_req1(47 downto 0);
+            res1<="110"&cache_req1(47 downto 0);
          end if;--if enw=true;
         end if;--if req1='00000'
         if cache_req2/=nada then
                   if enw=true then
-                    memory(writeptr) <= "001"&cache_req2;
+                    memory(writeptr) <= "0010"&cache_req2;
                     writeptr <= writeptr + 1;
                     enr:=true;
                     --writeptr loops
@@ -110,10 +119,10 @@ architecture Behavioral of AXI is
                     end if; 
                 --send fifo full message
                  elsif enw=false then
-                    res2<="11"&cache_req2(47 downto 0);
+                    res2<="110"&cache_req2(47 downto 0);
                  end if;--if enw=true;
         end if;--if req2='00000'
-        if memres/=nada then
+        if memres/=nadamem then
                   if enw=true then
                     memory(writeptr) <= "010"&memres;
                     writeptr <= writeptr + 1;
@@ -151,20 +160,62 @@ architecture Behavioral of AXI is
                 enr:=false;
             end if;
             --if it's an cache request fron cpu1, send snoop request to cpu2      
-            if tmplog(52 downto 50)="000" then
+            if tmplog(53 downto 51)="000" then
                 snoop2<=tmplog(49 downto 0);
-            elsif tmplog(52 downto 50)="001" then
+                logct:=tmplog(49 downto 0);
+                file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                                                         logsr:="snoop_2,";
+                                                         write(linept,logsr);
+                                                         write(linept,logct);
+                                                         writeline(logfile,linept);
+                                                         file_close(logfile);
+            elsif tmplog(53 downto 51)="001" then
                 snoop1<=tmplog(49 downto 0);
-            elsif tmplog(52 downto 50)="010" or tmplog(52 downto 50)="110" then
+                logct:=tmplog(49 downto 0);
+                file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                                                         logsr:="snoop_1,";
+                                                         write(linept,logsr);
+                                                         write(linept,logct);
+                                                         writeline(logfile,linept);
+                                                         file_close(logfile);
+            elsif tmplog(53 downto 51)="010" or tmplog(52 downto 50)="110" then
                 res1<=tmplog(49 downto 0);
-            elsif tmplog(52 downto 50)="011" or tmplog(52 downto 50)="100"then
+                logct:=tmplog(49 downto 0);
+                file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                                                         logsr:="ac1_res,";
+                                                         write(linept,logsr);
+                                                         write(linept,logct);
+                                                         writeline(logfile,linept);
+                                                         file_close(logfile);
+            elsif tmplog(53 downto 51)="011" or tmplog(52 downto 50)="100"then
                 res2<=tmplog(49 downto 0);
-            elsif tmplog(52 downto 50)="101" then
+                logct:=tmplog(49 downto 0);
+                file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                                                         logsr:="ac2_res,";
+                                                         write(linept,logsr);
+                                                         write(linept,logct);
+                                                         writeline(logfile,linept);
+                                                         file_close(logfile);
+            elsif tmplog(53 downto 51)="101" then
                 tomem<="1"&tmplog(49 downto 0);
-            elsif tmplog(52 downto 50)="111" then
+                logct1:="1"&tmplog(49 downto 0);
+                file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                                                         logsr:="axi_mem,";
+                                                         write(linept,logsr);
+                                                         write(linept,logct1);
+                                                         writeline(logfile,linept);
+                                                         file_close(logfile);
+            elsif tmplog(53 downto 51)="111" then
                 tomem<="0"&tmplog(49 downto 0);
+                logct1:="1"&tmplog(49 downto 0);
+                file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                                                         logsr:="axi_mem,";
+                                                         write(linept,logsr);
+                                                         write(linept,logct1);
+                                                         writeline(logfile,linept);
+                                                         file_close(logfile);
             end if;
-            tomem<=tmplog(49 downto 0);
+            tomem<='1'&tmplog(49 downto 0);
         end if; --if enr=1
       end if;--rising clck
     

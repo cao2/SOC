@@ -3,9 +3,8 @@ use ieee.math_real.all;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 package nondeterminism is
-  shared variable sl:integer:=844396720;
-  shared variable s2:integer:=821616997;
--- Returns a number between 1 and num. 
+  shared variable s1: integer:= 844396720;
+  shared variable s2: integer:= 821616997;
   -- Returns a number between 1 and num.
  impure function selection(constant num:in integer) return integer;
   -- Returns a std_logic_vector of size bits between 1 and num.
@@ -16,9 +15,11 @@ package nondeterminism is
                     constant u:in integer) return time;
 end nondeterminism;
 package body nondeterminism is
+   
   impure function selection(constant num:in integer) return integer is
     variable result:integer;
     variable tmp_real: real;
+   
   begin
     uniform(s1,s2,tmp_real);
     result := 1 + integer(trunc(tmp_real * real(num)));
@@ -40,9 +41,10 @@ package body nondeterminism is
                     constant u:in integer) return time is
 			variable result:time;
 			variable tmp : real ;
-		begin
-			uniform(sl,s2,tmp);
+			
+    begin
+			uniform(s1,s2,tmp);
 			result:=(((tmp * real(u - 1)) + real(l)) * 1 ns);
 			return result;
-		end delay;
+	end delay;
 end nondeterminism; 

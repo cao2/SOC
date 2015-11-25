@@ -36,7 +36,7 @@ use IEEE.std_logic_textio.all;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity L1Cache is
+entity L1Cache2 is
     Port ( 
     --packet has 2 bits command , 16 bits address, 32 bits data content
     --input from cpu
@@ -71,9 +71,9 @@ entity L1Cache is
             --10: write request
             --10,11: write back function
            bus_req : out STD_LOGIC_VECTOR(49 downto 0):= (others => '0'));
-end L1Cache;
+end L1Cache2;
 
-architecture Behavioral of L1Cache is
+architecture Behavioral of L1Cache2 is
 --IMB cache 1
 --3 lsb: dirty bit, valid bit, exclusive bit
 --****
@@ -93,7 +93,7 @@ begin
         file logfile: text;
    variable linept:line;
     variable logct: std_logic_vector(49 downto 0);
-      variable logsr: string(8 downto 1);
+      variable logsr: string(9 downto 1);
 
     variable req_index: integer;
     variable req_cmd: integer;
@@ -172,7 +172,7 @@ begin
             end if;--end if snoop_req/= 
        -----done with add to fifo 
        -----start read one from fifo
-       if (enr=true)then
+       if (enr=true) then
             tmplog:= memory(readptr);
             readptr <= readptr + 1;  
             if(readptr = 31) then      --resetting read pointer.
@@ -191,7 +191,7 @@ begin
                     bus_req<=tmplog(49 downto 0);
                      logct:=tmplog(49 downto 0);
                                                     file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                    logsr:="c_b_req,";
+                                                    logsr:="2c_b_req,";
                                                     write(linept,logsr);
                                                     write(linept,logct);
                                                     writeline(logfile,linept);
@@ -202,7 +202,7 @@ begin
                     bus_req<=tmplog(49 downto 0);
                     logct:=tmplog(49 downto 0);
                                                                         file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                        logsr:="c_b_req,";
+                                                                        logsr:="2c_b_req,";
                                                                         write(linept,logsr);
                                                                         write(linept,logct);
                                                                         writeline(logfile,linept);
@@ -213,7 +213,7 @@ begin
                     bus_req<=tmplog(49 downto 0);
                      logct:=tmplog(49 downto 0);
                                                                         file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                        logsr:="c_b_req,";
+                                                                        logsr:="2c_b_req,";
                                                                         write(linept,logsr);
                                                                         write(linept,logct);
                                                                         writeline(logfile,linept);
@@ -224,7 +224,7 @@ begin
                      bus_req<=tmplog(49 downto 0);
                      logct:=tmplog(49 downto 0);
                                                                          file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                         logsr:="c_b_req,";
+                                                                         logsr:="2c_b_req,";
                                                                          write(linept,logsr);
                                                                          write(linept,logct);
                                                                          writeline(logfile,linept);
@@ -235,7 +235,7 @@ begin
                         res<="00"&tmplog(47 downto 32)&(ROM_array(req_index)(31 downto 0));
                         logct:="00"&tmplog(47 downto 32)&(ROM_array(req_index)(31 downto 0));
                                                                             file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                            logsr:="c_p_res,";
+                                                                            logsr:="2c_p_res,";
                                                                             write(linept,logsr);
                                                                             write(linept,logct);
                                                                             writeline(logfile,linept);
@@ -246,7 +246,7 @@ begin
                         ROM_array(req_index)<="111"&tmplog(47 downto 42)&tmplog(31 downto 0);
                         logct:=(49=>'0', 48=>'1',others=>'0');
                                                                                                     file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                                                    logsr:="c_p_res,";
+                                                                                                    logsr:="2c_p_res,";
                                                                                                     write(linept,logsr);
                                                                                                     write(linept,logct);
                                                                                                     writeline(logfile,linept);
@@ -273,7 +273,7 @@ begin
                     bus_req<="00"&tmplog(47 downto 0);
                     logct:="00"&tmplog(47 downto 0);
                                                                                             file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                                            logsr:="c_b_req,";
+                                                                                            logsr:="2c_b_req,";
                                                                                             write(linept,logsr);
                                                                                             write(linept,logct);
                                                                                             writeline(logfile,linept);
@@ -282,7 +282,7 @@ begin
                     bus_req<="01"&tmplog(48 downto 0);
                     logct:="01"&tmplog(48 downto 0);
                                                                                                                 file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                                                                logsr:="c_b_req,";
+                                                                                                                logsr:="2c_b_req,";
                                                                                                                 write(linept,logsr);
                                                                                                                 write(linept,logct);
                                                                                                                 writeline(logfile,linept);
@@ -294,7 +294,7 @@ begin
                         res<="00"&tmplog(47 downto 0);
                         logct:="00"&tmplog(47 downto 0);
                                                                                                                                         file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                                                                                        logsr:="c_p_res,";
+                                                                                                                                        logsr:="2c_p_res,";
                                                                                                                                         write(linept,logsr);
                                                                                                                                         write(linept,logct);
                                                                                                                                         writeline(logfile,linept);
@@ -305,7 +305,7 @@ begin
                         res<="01"&tmplog(48 downto 0);
                         logct:="01"&tmplog(48 downto 0);
                                                                                                                                         file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                                                                                        logsr:="c_p_res,";
+                                                                                                                                        logsr:="2c_p_res,";
                                                                                                                                         write(linept,logsr);
                                                                                                                                         write(linept,logct);
                                                                                                                                         writeline(logfile,linept);
@@ -328,7 +328,7 @@ begin
                         ROM_array(req_index)<=cache_bits&tmplog(47 downto 42)&tmplog(31 downto 0);
                         logct:="11"&tmplog(41 downto 32)&ROM_array(req_index)(37 downto 32)&tmplog(31 downto 0);
                                                                                                                                                                 file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                                                                                                                                logsr:="c_b_req,";
+                                                                                                                                                                logsr:="2c_b_req,";
                                                                                                                                                                 write(linept,logsr);
                                                                                                                                                                 write(linept,logct);
                                                                                                                                                                 writeline(logfile,linept);

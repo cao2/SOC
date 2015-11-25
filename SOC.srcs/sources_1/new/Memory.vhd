@@ -22,6 +22,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 USE ieee.numeric_std.ALL;
+use std.textio.all;
+use IEEE.std_logic_textio.all;          -- I/O for logic types
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -49,12 +51,19 @@ architecture Behavioral of Memory is
 begin
     
   process (Clock)
+    file logfile: text;
+    variable linept:line;
+     variable logct: std_logic_vector(50 downto 0);
+       variable logsr: string(8 downto 1);
+       
+       
     variable tmplog: std_logic_vector(50 downto 0);
     variable enr: boolean:=false;
     variable enw: boolean:=true; 
     variable address: integer;
     variable flag: boolean:=false;
     variable nada: std_logic_vector(50 downto 0) :=(others=>'0');
+   
     begin
     if (rising_edge(Clock)) then
         if req/=nada then
@@ -73,6 +82,13 @@ begin
                 --send fifo full message
               elsif enw=false then
                      res<="111"&req(47 downto 0);
+                     logct:="111"&req(47 downto 0);
+                     file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                     logsr:="mem_res,";
+                     write(linept,logsr);
+                     write(linept,logct);
+                     writeline(logfile,linept);
+                     file_close(logfile);
               end if;
         end if;
        
@@ -90,6 +106,13 @@ begin
                 --regular request
                 if tmplog(49 downto 48)="00" or tmplog(49 downto 48)="01" then 
                     res<=tmplog(50 downto 32)&ROM_array(address);
+                    logct:=tmplog(50 downto 32)&ROM_array(address);
+                                         file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                                         logsr:="mem_res,";
+                                         write(linept,logsr);
+                                         write(linept,logct);
+                                         writeline(logfile,linept);
+                                         file_close(logfile);
                     flag:=true;
                 --write back request 
                 elsif tmplog(49 downto 48)="11" then  

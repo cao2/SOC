@@ -72,7 +72,7 @@ begin
      if (rising_edge(Clock) and yuting=true) then
         yuting<=false;
           if (rand1 = 1) then
-            cpu_req<="00"&rand2&empcot;
+            cpu_req<="00"&"0000000111111111"&"11110000001111111111111111111111";
             logct:="00"&rand2&empcot;
                                  file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
                                  logsr:="cpu_req,";

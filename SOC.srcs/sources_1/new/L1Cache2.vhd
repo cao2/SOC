@@ -265,6 +265,7 @@ begin
                 else
                       snoop_hit<=true;
                       snoop_res<=tmplog(49 downto 32)&ROM_array(req_index)(31 downto 0);
+                      ROM_array(req_index)(40)<='0';
                 end if;
             --response from bus
             elsif tmplog(51 downto 50)="01" then

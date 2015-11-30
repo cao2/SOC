@@ -72,7 +72,7 @@ begin
         yuting<=false;
           if (rand1 = 1) then
           rand1:=5;
-            cpu_req<="00"&rand2&empcot;
+            cpu_req<="00"&"0000000111110011"&empcot;
             logct:="00"&rand2&empcot;
                                  file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
                                  logsr:="cpu_req,";

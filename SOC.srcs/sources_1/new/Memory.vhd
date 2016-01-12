@@ -24,6 +24,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 USE ieee.numeric_std.ALL;
 use std.textio.all;
 use IEEE.std_logic_textio.all;          -- I/O for logic types
+library xil_defaultlib;
+use xil_defaultlib.writefunction.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -36,8 +38,10 @@ use IEEE.std_logic_textio.all;          -- I/O for logic types
 
 entity Memory is
     Port (  Clock: in std_logic;
-            req : in STD_LOGIC_VECTOR(50 downto 0);
-            res: out STD_LOGIC_VECTOR(50 downto 0));
+            full_b_m: in std_logic;
+            req : in STD_LOGIC_VECTOR(51 downto 0);
+            res: out STD_LOGIC_VECTOR(51 downto 0);
+            full_m: out std_logic:='0');
 end Memory;
 
 architecture Behavioral of Memory is
@@ -53,20 +57,22 @@ begin
   process (Clock)
     file logfile: text;
     variable linept:line;
-     variable logct: std_logic_vector(50 downto 0);
+     variable logct: std_logic_vector(51 downto 0);
        variable logsr: string(8 downto 1);
        
        
-    variable tmplog: std_logic_vector(50 downto 0);
+    variable tmplog: std_logic_vector(51 downto 0);
     variable enr: boolean:=false;
     variable enw: boolean:=true; 
     variable address: integer;
     variable flag: boolean:=false;
-    variable nada: std_logic_vector(50 downto 0) :=(others=>'0');
-   
+    variable nada: std_logic_vector(51 downto 0) :=(others=>'0');
+    variable bo :boolean;
     begin
     if (rising_edge(Clock)) then
-        if req/=nada then
+    --first set everything to default
+        res<=nada;
+        if req(51)/='0' then
             if enw=true then
                 memory(writeptr) <= req;
                 writeptr <= writeptr + 1;
@@ -78,22 +84,15 @@ begin
                 --check if full
                 if(writeptr=readptr) then
                      enw:=false;
+                     full_m<='1';
                 end if; 
                 --send fifo full message
-              elsif enw=false then
-                     res<="111"&req(47 downto 0);
-                     logct:="111"&req(47 downto 0);
-                     file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                     logsr:="mem_ref,";
-                     write(linept,logsr);
-                     write(linept,logct);
-                     writeline(logfile,linept);
-                     file_close(logfile);
-              end if;
+            end if;
         end if;
-       
+       --flag as to delay for one cycle for each request
         if (enr=true and flag=false) then
                 enw:=true;
+                full_m<='0';
                 tmplog:= memory(readptr);
                 readptr <= readptr + 1;  
                 if(readptr = 31) then      --resetting read pointer.
@@ -105,16 +104,29 @@ begin
                 
                 address:=to_integer(unsigned(tmplog(47 downto 32)));
                 --regular request
-                if tmplog(49 downto 48)="00" or tmplog(49 downto 48)="01" then 
-                    res<=tmplog(50 downto 32)&ROM_array(address);
-                    logct:=tmplog(50 downto 32)&ROM_array(address);
-                                         file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                         logsr:="mem_res,";
-                                         write(linept,logsr);
-                                         write(linept,logct);
-                                         writeline(logfile,linept);
-                                         file_close(logfile);
-                    flag:=true;
+                if tmplog(49 downto 48)="00" or tmplog(49 downto 48)="01" then
+                    if full_b_m='0' then 
+                        res<='1'&tmplog(50 downto 32)&ROM_array(address);
+                        logct:='1'&tmplog(50 downto 32)&ROM_array(address);
+                        logsr:="mem_res,";
+                        bo:=write51(logct,logsr);
+                        flag:=true;
+                     else
+                        memory(writeptr) <= tmplog;
+                        writeptr <= writeptr + 1;
+                        enr:=true;
+                        full_m<='0';
+                        --writeptr loops
+                         if(writeptr = 31) then       
+                             writeptr <= 0;
+                         end if;
+                         --check if full
+                         if(writeptr=readptr) then
+                             enw:=false;
+                             full_m<='1';
+                         end if;
+                         
+                     end if;             
                 --write back request 
                 elsif tmplog(49 downto 48)="11" then  
                     ROM_array(address)<=tmplog(31 downto 0);

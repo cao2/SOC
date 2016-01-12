@@ -58,24 +58,27 @@ architecture Behavioral of top is
 
   -- Clock frequency and signal
    signal Clock : std_logic;
-   signal bus_res1, bus_res2,cpu_res1, cpu_res2, cpu_req1, cpu_req2,snoop_req1,snoop_req2: std_logic_vector (49 downto 0);
+   signal full_c1_u, full_c2_u, full_b_c1, full_b_c2, full_c1_b, full_c2_b, full_b_m, full_m:std_logic;
+   signal bus_res1, bus_res2,cpu_res1, cpu_res2, cpu_req1, cpu_req2,snoop_req1,snoop_req2: std_logic_vector (50 downto 0);
    signal snoop_hit1, snoop_hit2: boolean;
-   signal snoop_res1, snoop_res2, bus_req1, bus_req2: std_logic_vector(49 downto 0);
-   signal  memres, tomem : std_logic_vector(50 downto 0);
+   signal snoop_res1, snoop_res2, bus_req1, bus_req2: std_logic_vector(50 downto 0);
+   signal  memres, tomem : std_logic_vector(51 downto 0);
 begin
     clk_gen(Clock, 166.667E6); 
     cpu1: entity xil_defaultlib.CPU(Behavioral) port map(
        Clock=>Clock,
        seed=>5,
        cpu_res=>cpu_res1,
-       cpu_req=>cpu_req1
+       cpu_req=>cpu_req1,
+       full_c=>full_c1_u
    );
    
    cpu2: entity xil_defaultlib.CPU2(Behavioral) port map(
           Clock=>Clock,
           seed=>5,
           cpu_res=>cpu_res2,
-          cpu_req=>cpu_req2
+          cpu_req=>cpu_req2,
+          full_c=>full_c2_u
       );
     cache1: entity xil_defaultlib.L1Cache(Behavioral) port map(
          Clock=>Clock,
@@ -85,7 +88,10 @@ begin
          res=>cpu_res1,
          snoop_hit=>snoop_hit1,
          snoop_res=>snoop_res1,
-         bus_req=>bus_req1
+         bus_req=>bus_req1,
+         full_c_u=>full_c1_u,
+         full_c_b=>full_c1_b,
+         full_b_c=>full_b_c1
     );
      cache2: entity xil_defaultlib.L1Cache2(Behavioral) port map(
             Clock=>Clock,
@@ -95,7 +101,10 @@ begin
             res=>cpu_res2,
             snoop_hit=>snoop_hit2,
             snoop_res=>snoop_res2,
-            bus_req=>bus_req2
+            bus_req=>bus_req2,
+            full_c_u=>full_c1_u,
+            full_c_b=>full_c2_b,
+            full_b_c=>full_b_c2
        );
     interconnect: entity xil_defaultlib.AXI(Behavioral) port map(
         Clock=>Clock,
@@ -110,11 +119,19 @@ begin
         res2=>bus_res2,
         tomem=>tomem,
         snoop1=>snoop_req1,
-        snoop2=>snoop_req2
+        snoop2=>snoop_req2,
+        full_c1_b=>full_c1_b,
+        full_c2_b=>full_c2_b,
+        full_b_c1=>full_b_c1,
+        full_b_c2=>full_b_c2,
+        full_b_m=>full_b_m,
+        full_m=>full_m
     );
     mem: entity xil_defaultlib.Memory(Behavioral) port map(   
         Clock=>Clock,
         req=>tomem,
-        res=>memres
+        res=>memres,
+        full_b_m=>full_b_m,
+        full_m=>full_m
     );
 end Behavioral;

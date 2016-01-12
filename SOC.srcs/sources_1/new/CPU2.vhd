@@ -36,30 +36,32 @@ use IEEE.std_logic_textio.all;
 
 entity CPU2 is
     Port ( 
-           Clock: in std_logic;
-           seed: in integer;
-           cpu_res: in std_logic_vector(49 downto 0):= (others => '0');
-           cpu_req : out std_logic_vector(49 downto 0)
-           );
+       Clock: in std_logic;
+       seed: in integer;
+       cpu_res: in std_logic_vector(50 downto 0);
+       cpu_req : out std_logic_vector(50 downto 0);
+       full_c: in std_logic
+       );
+
 end CPU2;
 
 
 
 architecture Behavioral of CPU2 is
-       signal yuting:boolean:=true;
+ signal yuting:boolean:=true;
 begin
 -- processor random generate read or write request
  p1 : process (Clock)
      file logfile: text;
     variable linept:line;
-     variable logct: std_logic_vector(49 downto 0);
+     variable logct: std_logic_vector(50 downto 0);
        variable logsr: string(8 downto 1);
  
      variable readsucc: integer :=0;
      variable writesucc: integer :=0;
      variable cmd: integer:=2;
      variable empcot: std_logic_vector(31 downto 0):=(others=>'0');
-     variable nilreq: std_logic_vector(49 downto 0):=(others=>'0');
+     variable nilreq: std_logic_vector(50 downto 0):=(others=>'0');
      --if rand1 is 1 then read request
      --if rand1 is 2 then write request
      variable rand1:integer:=selection(2);
@@ -67,47 +69,44 @@ begin
      variable rand2: std_logic_vector(15 downto 0):=selection(2**15-1,16);
      --generate the random content
      variable rand3: std_logic_vector(31 downto 0):=selection(2**15-1,32);
+
      begin
      if (rising_edge(Clock) and yuting=true) then
+     cpu_req<=nilreq;
+     if (yuting=true and full_c='0') then
         yuting<=false;
           if (rand1 = 1) then
-          rand1:=5;
-            cpu_req<="00"&"0000000111110011"&empcot;
-            logct:="00"&rand2&empcot;
+            cpu_req<="100"&"0000000111111111"&"11110000001111111111111111111111";
+            logct:="100"&rand2&empcot;
                                  file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                 logsr:="cpu_req,";
+                                 logsr:="cp2_req,";
                                  write(linept,logsr);
                                  write(linept,logct);
                                  writeline(logfile,linept);
                                  file_close(logfile);
           elsif (rand1 =2) then
-          rand1:=5;
-            cpu_req<="01"&rand2&rand3;
-            logct:="01"&rand2&rand3;
+            cpu_req<="101"&rand2&rand3;
+            logct:="101"&rand2&rand3;
                                              file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                             logsr:="cpu_req,";
+                                             logsr:="cp2_req,";
                                              write(linept,logsr);
                                              write(linept,logct);
                                              writeline(logfile,linept);
-                                             file_close(logfile);
           end if;
-          
-          if cpu_res/=nilreq then
+      --else if the cache buffer is full, don't send anything
+       else
+            cpu_req<=nilreq;
+       end if;
+       
+       --if received any request from cache
+       --if request valide bit is not 0
+          if cpu_res(50)/='0' then
             cmd:=to_integer(unsigned(cpu_res(49 downto 48)));
             if(cmd=0) then
                 readsucc:=readsucc+1;
             elsif cmd=1 then
                 writesucc:=writesucc+1;
-            elsif cmd=3 then
-                --this is when full
-                cpu_req<="0"&cpu_res(48 downto 0);
-                logct:="0"&cpu_res(48 downto 0);
-                                                             file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                                             logsr:="cpu_req,";
-                                                             write(linept,logsr);
-                                                             write(linept,logct);
-                                                             writeline(logfile,linept);
-                                                             file_close(logfile);
+--here i delete the cmd=3 for full situation of cache since cache has its own full_c signal, request wont even be sent there if it's set true
             end if;
           end if;
           

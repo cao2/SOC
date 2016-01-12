@@ -48,7 +48,7 @@ architecture Behavioral of Memory is
      type rom_type is array (2**16-1 downto 0) of std_logic_vector (31 downto 0);     
      signal ROM_array : rom_type:= ((others=> (others=>'0')));
      
-     type memory_type is array (31 downto 0) of std_logic_vector(50 downto 0);
+     type memory_type is array (31 downto 0) of std_logic_vector(51 downto 0);
      signal memory : memory_type :=(others => (others => '0'));   --memory for queue.
     signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.begin
 

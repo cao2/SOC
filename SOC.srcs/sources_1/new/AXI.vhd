@@ -65,7 +65,7 @@ architecture Behavioral of AXI is
 --fifo has 53 bits
 --3 bits for indicating its source
 --50 bits for packet
-    type memory_type is array (31 downto 0) of std_logic_vector(52 downto 0);
+    type memory_type is array (31 downto 0) of std_logic_vector(53 downto 0);
     signal memory : memory_type :=(others => (others => '0'));   --memory for queue.
     signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.begin
  begin  
@@ -76,7 +76,7 @@ architecture Behavioral of AXI is
         variable logct1: std_logic_vector(51 downto 0);
         variable logsr: string(8 downto 1);
   
-        variable tmplog: std_logic_vector(52 downto 0);
+        variable tmplog: std_logic_vector(53 downto 0);
         variable enr: boolean:=false;
         variable enw: boolean:=true; 
         variable address: integer;

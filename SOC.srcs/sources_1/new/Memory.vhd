@@ -72,7 +72,7 @@ begin
     if (rising_edge(Clock)) then
     --first set everything to default
         res<=nada;
-        if req(51)/='0' then
+        if req(51 downto 51)= "1" then
             if enw=true then
                 memory(writeptr) <= req;
                 writeptr <= writeptr + 1;

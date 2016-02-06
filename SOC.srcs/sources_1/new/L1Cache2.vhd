@@ -122,7 +122,7 @@ begin
                    bus_req<=nilreq;
                    snoop_hit<=false;
         --if valid bit of cpu request is not 0                                                     
-           if req(50)/= '0' then
+           if  req(50 downto 50)= "1" then
                 if enw=true then
                     memory(writeptr) <= "00"&req(49 downto 0);
                     writeptr <= writeptr + 1;
@@ -144,7 +144,7 @@ begin
             end if;--end if req/=xx
             
             --recieving response from bus
-            if bus_res(50)/='0' then
+            if bus_res(50 downto 50)= "1" then
                     if enw=true then
                            memory(writeptr) <= "01"&bus_res(49 downto 0);
                            writeptr <= writeptr + 1;
@@ -163,7 +163,7 @@ begin
                     end if;
             end if;--end if bus_res/= 
             
-            if snoop_req(50)/='0' then
+            if snoop_req(50 downto 50)= "1" then
                     if enw=true then
                            memory(writeptr) <= "11"&snoop_req(49 downto 0);
                            writeptr <= writeptr + 1;

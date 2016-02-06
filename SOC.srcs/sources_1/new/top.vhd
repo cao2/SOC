@@ -40,21 +40,7 @@ end top;
 architecture Behavioral of top is
 
     -- Procedure for clock generation
-  procedure clk_gen(signal clk : out std_logic; constant FREQ : real) is
-    constant PERIOD    : time := 1 sec / FREQ;        -- Full period
-    constant HIGH_TIME : time := PERIOD / 2;          -- High time
-    constant LOW_TIME  : time := PERIOD - HIGH_TIME;  -- Low time; always >= HIGH_TIME
-  begin
-    -- Check the arguments
-    assert (HIGH_TIME /= 0 fs) report "clk_plain: High time is zero; time resolution to large for frequency" severity FAILURE;
-    -- Generate a clock cycle
-    loop
-      clk <= '1';
-      wait for HIGH_TIME;
-      clk <= '0';
-      wait for LOW_TIME;
-    end loop;
-  end procedure;
+  
 
   -- Clock frequency and signal
    signal Clock : std_logic;
@@ -64,7 +50,20 @@ architecture Behavioral of top is
    signal snoop_res1, snoop_res2, bus_req1, bus_req2: std_logic_vector(50 downto 0);
    signal  memres, tomem : std_logic_vector(51 downto 0);
 begin
-    clk_gen(Clock, 166.667E6); 
+    clk_gen : process
+       
+    begin
+    -- Generate a clock cycle
+    
+    loop
+      Clock <= '1';
+      wait for 1 ns;
+      Clock <= '0';
+      wait for 1 ns;
+    end loop;
+  end process;
+  
+  
     cpu1: entity xil_defaultlib.CPU(Behavioral) port map(
        Clock=>Clock,
        seed=>5,

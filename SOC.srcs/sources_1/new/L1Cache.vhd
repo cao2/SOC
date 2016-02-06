@@ -122,9 +122,10 @@ begin
                    bus_req<=nilreq;
                    snoop_hit<=false;
         --if valid bit of cpu request is not 0                                                     
-           if req(50)/= '0' then
+           if req(50 downto 50)= "1" then
                 if enw=true then
                     memory(writeptr) <= "00"&req(49 downto 0);
+                               
                     writeptr <= writeptr + 1;
                     enr:=true;
                     --writeptr loops
@@ -144,7 +145,7 @@ begin
             end if;--end if req/=xx
             
             --recieving response from bus
-            if bus_res(50)/='0' then
+            if bus_res(50 downto 50)="1" then
                     if enw=true then
                            memory(writeptr) <= "01"&bus_res(49 downto 0);
                            writeptr <= writeptr + 1;
@@ -163,7 +164,7 @@ begin
                     end if;
             end if;--end if bus_res/= 
             
-            if snoop_req(50)/='0' then
+            if snoop_req(50 downto 50)= "1" then
                     if enw=true then
                            memory(writeptr) <= "11"&snoop_req(49 downto 0);
                            writeptr <= writeptr + 1;
@@ -203,10 +204,11 @@ begin
             --request from cpu
            if tmplog(51 downto 50)="00" then
             if full_b_c='0' then
+                logct:='1'&tmplog(49 downto 0);
                 if ROM_array(req_index)= nilmem  then
                     --send request to bus
                     bus_req<='1'&tmplog(49 downto 0);
-                    logct:='1'&tmplog(49 downto 0);
+                    
                                                     file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
                                                     logsr:="1ca_req,";
                                                     write(linept,logsr);
@@ -319,6 +321,7 @@ begin
                     or ROM_array(req_index)(40)='0'
                     or ROM_array(req_index)(37 downto 32)/=tmplog(47 downto 42) then
                       snoop_hit<=false;
+                      snoop_res<='1'&tmplog(49 downto 0);
                 --if cache hit, return the data to bus
                 else
                     if full_b_c='0' then

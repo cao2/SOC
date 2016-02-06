@@ -100,7 +100,7 @@ architecture Behavioral of AXI is
     --snoop respons from cpu1 with miss: 101
     --snoop              cpu2 hit: 110
     --                      miss:  111 
-        if cache_req1(50)/='0' then
+        if cache_req1(50 downto 50)= "1" then
           if enw=true then
             memory(writeptr) <= "000"&cache_req1;
             writeptr <= writeptr + 1;
@@ -119,7 +119,7 @@ architecture Behavioral of AXI is
        
          end if;--if enw=true;
         end if;--if req1='00000'
-        if cache_req2(50)/='0' then
+        if cache_req2(50 downto 50)= "1" then
                   if enw=true then
                     memory(writeptr) <= "001"&cache_req2;
                     writeptr <= writeptr + 1;
@@ -138,7 +138,7 @@ architecture Behavioral of AXI is
                  end if;--if enw=true;
         end if;--if req2='00000'
         
-        if memres(51)/='0' then
+        if memres(51 downto 51)= "1" then
                   if enw=true then
                     if memres(50)='0' then
                         memory(writeptr) <= "010"&memres(49 downto 0);
@@ -161,7 +161,7 @@ architecture Behavioral of AXI is
                  end if;--if enw=true;
             end if;--if memres/=nadamem
             
-            if snoop_res1(50)/='0' then
+            if snoop_res1(50 downto 50)= "1" then
                 if enw=true then
                     if cache_hit1=true then
                         memory(writeptr)<="100"&snoop_res1;
@@ -182,7 +182,7 @@ architecture Behavioral of AXI is
                 end if;--enw=true
             end if;--if snoop_res1;
             
-            if snoop_res2(50)/='0' then
+            if snoop_res2(50 downto 50)= "1" then
                 if enw=true then
                     if cache_hit2=true then
                         memory(writeptr)<="110"&snoop_res2;

@@ -48,7 +48,7 @@ end CPU2;
 
 
 architecture Behavioral of CPU2 is
- signal yuting:boolean:=true;
+ signal yuting:boolean:=false;
 begin
 -- processor random generate read or write request
  p1 : process (Clock)
@@ -71,13 +71,13 @@ begin
      variable rand3: std_logic_vector(31 downto 0):=selection(2**15-1,32);
 
      begin
-     if (rising_edge(Clock) and yuting=true) then
+     if (rising_edge(Clock)) then
      cpu_req<=nilreq;
      if (yuting=true and full_c='0') then
         yuting<=false;
           if (rand1 = 1) then
-            cpu_req<="100"&"0000000111111111"&"11110000001111111111111111111111";
-            logct:="100"&rand2&empcot;
+            cpu_req<="100"&"0000000111111111"&"11110000001111111111111111100000";
+            logct:="100"&"0000000111111111"&"11110000001111111111111111100000";
                                  file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
                                  logsr:="cp2_req,";
                                  write(linept,logsr);
@@ -85,13 +85,14 @@ begin
                                  writeline(logfile,linept);
                                  file_close(logfile);
           elsif (rand1 =2) then
-            cpu_req<="101"&rand2&rand3;
-            logct:="101"&rand2&rand3;
+            cpu_req<="100"&"0000000111111111"&"11110000001111111111111111100000";
+            logct:="100"&"0000000111111111"&"11110000001111111111111111100000";
                                              file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
                                              logsr:="cp2_req,";
                                              write(linept,logsr);
                                              write(linept,logct);
-                                             writeline(logfile,linept);
+                                             writeline(logfile,linept);--close
+                                             file_close(logfile);
           end if;
       --else if the cache buffer is full, don't send anything
        else

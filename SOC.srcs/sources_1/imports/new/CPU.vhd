@@ -37,7 +37,6 @@ use IEEE.std_logic_textio.all;
 entity CPU is
     Port ( 
            Clock: in std_logic;
-           seed: in integer;
            cpu_res: in std_logic_vector(50 downto 0);
            cpu_req : out std_logic_vector(50 downto 0);
            full_c: in std_logic

@@ -113,9 +113,6 @@ begin
     variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
   	begin   
 	    if rising_edge(Clock) then   
-	    --deal with  request first
-	    --is it how i should compare?
-	    --00+request
 	               --set all output signal to its default value first, to flush out the old requst
                    res<=nilreq;
                    snoop_res<=nilreq;
@@ -124,8 +121,7 @@ begin
         --if valid bit of cpu request is not 0                                                     
            if req(50 downto 50)= "1" then
                 if enw=true then
-                    memory(writeptr) <= "00"&req(49 downto 0);
-                               
+                    memory(writeptr) <= "10"&req(49 downto 0);
                     writeptr <= writeptr + 1;
                     enr:=true;
                     --writeptr loops
@@ -138,10 +134,8 @@ begin
                         full_c_u<='1';
                         full_c_b<='1';
                     end if; 
-               
                 end if;
                 --if it's not there
-                
             end if;--end if req/=xx
             
             --recieving response from bus
@@ -200,15 +194,14 @@ begin
             end if;
             req_index:= to_integer(unsigned(tmplog(41 downto 32)));
             req_cmd:= to_integer(unsigned(tmplog(49 downto 48)));
-            
             --request from cpu
-           if tmplog(51 downto 50)="00" then
+           if tmplog(51 downto 50)="10" then
             if full_b_c='0' then
-                logct:='1'&tmplog(49 downto 0);
+                
                 if ROM_array(req_index)= nilmem  then
                     --send request to bus
                     bus_req<='1'&tmplog(49 downto 0);
-                    
+                    logct:='1'&tmplog(49 downto 0);
                                                     file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
                                                     logsr:="1ca_req,";
                                                     write(linept,logsr);

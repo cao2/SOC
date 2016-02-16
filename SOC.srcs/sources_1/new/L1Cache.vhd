@@ -94,6 +94,7 @@ architecture Behavioral of L1Cache is
 	signal hit1,hit2: std_logic;
 	signal in1,in2,in3: std_logic_vector(49 downto 0);
 	signal cpu_res1, cpu_res2: std_logic_vector(50 downto 0);
+	signal ack1, ack2: std_logic;
 begin
 	cpu_req: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
 		CLK=>Clock,
@@ -169,6 +170,8 @@ begin
 	variable indx:integer;
 	variable memcont: std_logic_vector(40 downto 0);
 	variable nilmem: std_logic_vector(40 downto 0):=(others=>'0');
+	variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+	
 	begin
 		if rising_edge(Clock) then
 			if emp1='0'
@@ -178,9 +181,15 @@ begin
 				wait for 1ns;
 				--if cache have it, make the return
 				if(hit1='1')
-					cpu_res1<=
+					cpu_res1<='1'&req(49 downto 32)&mem_res1(31 downto 0);
+					while ack1='0' loop
+					end loop;
 				else
-					
+					while full_crq='1' loop
+					end loop;
+					cache_req<='1'&req;
+					wait for 1ns;
+					cache_req<=nilreq;
 				end if;
 			end if;
 		end if;

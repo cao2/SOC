@@ -38,22 +38,18 @@ use IEEE.std_logic_textio.all;
 
 entity L1Cache is
     Port ( 
-    --packet has 2 bits command , 16 bits address, 32 bits data content
     --input from cpu
            Clock: in std_logic;
-           --00 read request
-           --01 write request
+           --00 read request --01 write request
            req : in STD_LOGIC_VECTOR(50 downto 0);
     --input from bus about snoop request
-            --00 read request snoop
-            --01 write snoop request--if found, invalidate
+            --00 read request snoop  --01 write snoop request--if found, invalidate
            snoop_req : in STD_LOGIC_VECTOR(50 downto 0);
     --input from bus about response
            --00 read response
            --01 write response
            --10,11 fifo full response
            bus_res  : in  STD_LOGIC_VECTOR(50 downto 0):= (others => '0');
-           
     --output to cpu's request
     --oreq has the same type as of the req 
            --01: read response
@@ -70,9 +66,10 @@ entity L1Cache is
             --01: read request
             --10: write request
             --10,11: write back function
-           full_c_u: out std_logic:='0';
-           full_c_b: out std_logic:='0';
-           full_b_c: in std_logic;
+           full_crq: out std_logic:='0';
+           full_srq: out std_logic:='0';
+           full_brs: out std_logic:='0';
+           full_crq,full_wb,full_srs: in std_logic;
            bus_req : out STD_LOGIC_VECTOR(50 downto 0):= (others => '0')
            );
            
@@ -82,19 +79,115 @@ end L1Cache;
 architecture Behavioral of L1Cache is
 --IMB cache 1
 --3 lsb: dirty bit, valid bit, exclusive bit
---****
 --cache hold valid bit ,dirty bit, exclusive bit, 6 bits tag, 32 bits data, 41 bits in total
---****
-      type rom_type is array (2**10-1 downto 0) of std_logic_vector (40 downto 0);     
-      signal ROM_array : rom_type:= ((others=> (others=>'0')));
-         --create fifo that can hold 32 task
-         --first two digit indicate source of packet
-      type memory_type is array (31 downto 0) of std_logic_vector(51 downto 0);
-      signal memory : memory_type :=(others => (others => '0'));   --memory for queue.
-      signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.
 
+
+
+    type rom_type is array (2**10-1 downto 0) of std_logic_vector (40 downto 0);     
+    signal ROM_array : rom_type:= ((others=> (others=>'0')));
+       
+	signal we1,we2,we3,re1,re2,re3: std_logic:='0';
+	signal out1,out2,out3:std_logic_vector(49 downto 0);
+	signal emp1,emp2,emp3,ful1,ful2,ful3: std_logic:='0';	
+	signal mem_req1,mem_req2: std_logic_vector(49 downto 0);
+	signal mem_res1,mem_res2: std_logic_vector(49 downto 0);
+	signal hit1,hit2: std_logic;
+	signal in1,in2,in3: std_logic_vector(49 downto 0);
+	signal cpu_res1, cpu_res2: std_logic_vector(50 downto 0);
 begin
-
+	cpu_req: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+		CLK=>Clock,
+		RST=>'0',
+		DataIn=>in1,
+		WriteEn=>we1,
+		ReadEn=>re1,
+		DataOut=>out1,
+		Full=>full_crq,
+		Empty=>emp1
+		);
+	snp_req: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+		CLK=>Clock,
+		RST=>'0',
+		DataIn=>in2,
+		WriteEn=>we2,
+		ReadEn=>re2,
+		DataOut=>out2,
+		Full=>full_srq,
+		Empty=>emp2
+		);
+	bus_res: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+		CLK=>Clock,
+		RST=>'0',
+		DataIn=>in3,
+		WriteEn=>we3,
+		ReadEn=>re3,
+		DataOut=>out3,
+		Full=>full_brs,
+		Empty=>emp3
+		);
+	
+	--read request into each fifo	
+	cpu_req_fifo: process(Clock)
+	begin
+		if rising_edge(Clock) then
+			if(cpu_req(50 downto 50)="1") then
+				in1<=cpu_req(49 downto 0);
+				we1<='1';
+				wait for 1ns;
+				we1<='0';
+			end if;
+		end if;
+	end process;
+	
+	snp_req_fifo: process(Clock)
+	begin
+		if rising_edge(Clock) then
+			if(snoop_req(50 downto 50)="1") then
+				in2<=snoop_req(49 downto 0);
+				we2<='1';
+				wait for 1ns;
+				we2<='0';
+			end if;
+		end if;
+	end process;
+	
+	bus_res_fifo: process(Clock)
+	begin
+		if rising_edge(Clock) then
+			if(bus_res(50 downto 50)="1") then
+				in3<=bus_res(49 downto 0);
+				we3<='1';
+				wait for 1ns;
+				we3<='0';
+			end if;
+		end if;
+	end process;
+	
+	--deal with cpu request
+	cpu_req_p:process(Clock)
+	variable req:std_logic_vector(49 downto 0);
+	variable indx:integer;
+	variable memcont: std_logic_vector(40 downto 0);
+	variable nilmem: std_logic_vector(40 downto 0):=(others=>'0');
+	begin
+		if rising_edge(Clock) then
+			if emp1='0'
+				re1<='1';
+				req:=out1;
+				mem_req1<=req;
+				wait for 1ns;
+				--if cache have it, make the return
+				if(hit1='1')
+					cpu_res1<=
+				else
+					
+				end if;
+			end if;
+		end if;
+	end process;
+	
+	
+		
     process (Clock)
         file logfile: text;
    variable linept:line;

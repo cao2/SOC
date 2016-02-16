@@ -174,6 +174,7 @@ begin
 	
 	begin
 		if rising_edge(Clock) then
+			cache_req<=nilreq;
 			if emp1='0'
 				re1<='1';
 				req:=out1;
@@ -181,19 +182,47 @@ begin
 				wait for 1ns;
 				--if cache have it, make the return
 				if(hit1='1')
+					--wait until ack1 is received
 					cpu_res1<='1'&req(49 downto 32)&mem_res1(31 downto 0);
 					while ack1='0' loop
 					end loop;
+					--after acknowlegement, reset it to empty request
+					cpu_res1<=nilreq;
 				else
+					--when cache request fifo is full, keep waiting
+					--what other option can i do
 					while full_crq='1' loop
 					end loop;
 					cache_req<='1'&req;
-					wait for 1ns;
-					cache_req<=nilreq;
 				end if;
 			end if;
 		end if;
 	end process;
+	
+	--deal with bus response
+	bus_res_p:process(Clock)
+	variable res:std_logic_vector(49 downto 0);
+	variable indx:integer;
+	variable memcont: std_logic_vector(40 downto 0);
+	variable nilmem: std_logic_vector(40 downto 0):=(others=>'0');
+	variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+	
+	begin
+		if rising_edge(Clock) then
+			cache_req<=nilreq;
+			if emp3='0'
+				re3<='1';
+				res:=out1;
+				mem_req1<=req;
+				wait for 1ns;
+				
+			end if;
+		end if;
+	end process;
+	
+	
+	
+	
 	
 	
 		

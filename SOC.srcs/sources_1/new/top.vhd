@@ -66,7 +66,6 @@ begin
   
     cpu1: entity xil_defaultlib.CPU(Behavioral) port map(
        Clock=>Clock,
-       seed=>5,
        cpu_res=>cpu_res1,
        cpu_req=>cpu_req1,
        full_c=>full_c1_u
@@ -74,7 +73,6 @@ begin
    
    cpu2: entity xil_defaultlib.CPU2(Behavioral) port map(
           Clock=>Clock,
-          seed=>5,
           cpu_res=>cpu_res2,
           cpu_req=>cpu_req2,
           full_c=>full_c2_u

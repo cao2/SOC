@@ -181,6 +181,13 @@ begin
        -----start read one from fifo
        if (enr=true)then
             tmplog:= memory(readptr);
+            logct:=tmplog(51 downto 1);
+                                                                            file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
+                                                                            logsr:="bbb_bbb,";
+                                                                            write(linept,logsr);
+                                                                            write(linept,logct);
+                                                                            writeline(logfile,linept);
+                                                                            file_close(logfile);   
             readptr <= readptr + 1;  
             if(readptr = 31) then      --resetting read pointer.
                 readptr <= 0;

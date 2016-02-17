@@ -57,7 +57,7 @@ entity L1Cache is
            full_crq: out std_logic:='0';
            full_srq: out std_logic:='0';
            full_brs: out std_logic:='0';
-           full_crq,full_wb,full_srs: in std_logic;
+           full_wb,full_srs: in std_logic;
            bus_req : out STD_LOGIC_VECTOR(50 downto 0):= (others => '0')
            );
            

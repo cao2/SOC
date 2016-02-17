@@ -37,6 +37,7 @@ use IEEE.std_logic_textio.all;
 entity CPU is
     Port ( 
            Clock: in std_logic;
+           seed: in integer;
            cpu_res: in std_logic_vector(50 downto 0);
            cpu_req : out std_logic_vector(50 downto 0);
            full_c: in std_logic
@@ -51,66 +52,40 @@ architecture Behavioral of CPU is
 begin
 -- processor random generate read or write request
  p1 : process (Clock)
-     file logfile: text;
-    variable linept:line;
-     variable logct: std_logic_vector(50 downto 0);
-       variable logsr: string(8 downto 1);
- 
      variable readsucc: integer :=0;
      variable writesucc: integer :=0;
      variable cmd: integer:=2;
-     variable empcot: std_logic_vector(31 downto 0):=(others=>'0');
      variable nilreq: std_logic_vector(50 downto 0):=(others=>'0');
+     
      --if rand1 is 1 then read request
      --if rand1 is 2 then write request
      variable rand1:integer:=selection(2);
-     --generate the random address
+     --generate the random address & cnontent
      variable rand2: std_logic_vector(15 downto 0):=selection(2**15-1,16);
-     --generate the random content
      variable rand3: std_logic_vector(31 downto 0):=selection(2**15-1,32);
-    variable count: integer:=0;
-     begin
+    
+    begin
      if (rising_edge(Clock)) then
-     count:=count+1;
-     cpu_req<=nilreq;
-     if (yuting=true and full_c='0') then
-        yuting<=false;
-          if (rand1 = 1) then
-            cpu_req<="100"&"0000000111111111"&"11110000001111111111111111111111";
-            logct:="100"&"0000000111111111"&"11110000001111111111111111111111";
-                                 file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                 logsr:="cp1_req,";
-                                 write(linept,logsr);
-                                 write(linept,logct);
-                                 writeline(logfile,linept);
-                                 file_close(logfile);
-          elsif (rand1 =2) then
-            cpu_req<="101"&rand2&rand3;
-            logct:="101"&rand2&rand3;
-                                             file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-                                             logsr:="cp1_req,";
-                                             write(linept,logsr);
-                                             write(linept,logct);
-                                             writeline(logfile,linept);
-                                             file_close(logfile);
-          end if;
-      --else if the cache buffer is full, don't send anything
-      
-       end if;
-       
+     	cpu_req<=nilreq;
+     	if (yuting=true and full_c='0') then
+        	yuting<=false;
+          	if (rand1 = 1) then
+            	cpu_req<="101"&"0000000111111111"&"11110000001111111111111111111111";
+          	elsif (rand1 =2) then
+            	cpu_req<="110"&rand2&rand3;
+          	end if;
+      	--else if the cache buffer is full, don't send anything
+       	end if;
        --if received any request from cache
        --if request valide bit is not 0
-          if cpu_res(50)/='0' then
+    	if cpu_res(50 downto 50)="1" then
             cmd:=to_integer(unsigned(cpu_res(49 downto 48)));
             if(cmd=0) then
                 readsucc:=readsucc+1;
             elsif cmd=1 then
                 writesucc:=writesucc+1;
---here i delete the cmd=3 for full situation of cache since cache has its own full_c signal, request wont even be sent there if it's set true
             end if;
-          end if;
-          
-         
+        end if;         
    end if;
   end process; 
  

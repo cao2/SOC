@@ -66,13 +66,15 @@ begin
   
     cpu1: entity xil_defaultlib.CPU(Behavioral) port map(
        Clock=>Clock,
+       seed=>5,
        cpu_res=>cpu_res1,
        cpu_req=>cpu_req1,
        full_c=>full_c1_u
    );
    
-   cpu2: entity xil_defaultlib.CPU2(Behavioral) port map(
+   cpu2: entity xil_defaultlib.CPU(Behavioral) port map(
           Clock=>Clock,
+          seed=>10,
           cpu_res=>cpu_res2,
           cpu_req=>cpu_req2,
           full_c=>full_c2_u
@@ -90,7 +92,7 @@ begin
          full_c_b=>full_c1_b,
          full_b_c=>full_b_c1
     );
-     cache2: entity xil_defaultlib.L1Cache2(Behavioral) port map(
+     cache2: entity xil_defaultlib.L1Cache(Behavioral) port map(
             Clock=>Clock,
             req=>cpu_req2,
             snoop_req=>snoop_req2,

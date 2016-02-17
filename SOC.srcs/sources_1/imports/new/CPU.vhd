@@ -70,9 +70,9 @@ begin
      	if (yuting=true and full_c='0') then
         	yuting<=false;
           	if (rand1 = 1) then
-            	cpu_req<="100"&"0000000111111111"&"11110000001111111111111111111111";
+            	cpu_req<="101"&"0000000111111111"&"11110000001111111111111111111111";
           	elsif (rand1 =2) then
-            	cpu_req<="101"&rand2&rand3;
+            	cpu_req<="110"&rand2&rand3;
           	end if;
       	--else if the cache buffer is full, don't send anything
        	end if;

@@ -4,7 +4,7 @@ USE IEEE.NUMERIC_STD.ALL;
 
 entity STD_FIFO is
 	Generic (
-		constant DATA_WIDTH  : positive := 32;
+		constant DATA_WIDTH  : positive := 51;
 		constant FIFO_DEPTH	: positive := 256
 	);
 	Port ( 
@@ -37,9 +37,7 @@ begin
 			if RST = '1' then
 				Head := 0;
 				Tail := 0;
-				
 				Looped := false;
-				
 				Full  <= '0';
 				Empty <= '1';
 			else

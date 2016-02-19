@@ -63,11 +63,12 @@ begin
      --generate the random address & cnontent
      variable rand2: std_logic_vector(15 downto 0):=selection(2**15-1,16);
      variable rand3: std_logic_vector(31 downto 0):=selection(2**15-1,32);
-    
+  
     begin
      if (rising_edge(Clock)) then
      	cpu_req<=nilreq;
-     	if (yuting=true and full_c='0') then
+     	
+     	if (yuting=true and full_c/='1') then
         	yuting<=false;
           	if (rand1 = 1) then
             	cpu_req<="101"&"0000000111111111"&"11110000001111111111111111111111";

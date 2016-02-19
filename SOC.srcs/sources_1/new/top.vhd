@@ -24,6 +24,7 @@ use iEEE.std_logic_unsigned.all ;
 USE ieee.numeric_std.ALL;
 use xil_defaultlib.all;
 use std.textio.all;
+use IEEE.std_logic_textio.all; 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
@@ -50,6 +51,7 @@ architecture Behavioral of top is
    signal snoop_res1, snoop_res2, bus_req1, bus_req2: std_logic_vector(50 downto 0);
    signal  memres, tomem : std_logic_vector(51 downto 0);
    signal full_crq1, full_srq1, full_brs1,full_wb1,full_srs1,full_crq2, full_srq2, full_brs2,full_wb2,full_srs2:std_logic;
+   signal reset: std_logic:='1';
 begin
     clk_gen : process
     	file logfile: text;
@@ -57,17 +59,24 @@ begin
         variable logct: std_logic_vector(50 downto 0);
         variable logct1: std_logic_vector(51 downto 0);
         variable logsr: string(8 downto 1);
+        variable x:integer:=0;
     begin
     -- Generate a clock cycle
-    file_open(logfile,"C:\Users\cao2\Documents\log.txt",append_mode);
-    
+    file_open(logfile,"C:\Users\cao2\Documents\log1.txt",write_mode);
+    reset<='1';
+    wait for 2 ps;
+    reset<='0';
     loop
       Clock <= '1';
-      
-      
-      wait for 1 ns;
+      wait for 2 ps;
+      x:=x+1;
+      if x=1 then
+        x:=0;
+        file_close(logfile);
+        file_open(logfile,"C:\Users\cao2\Documents\log1.txt",append_mode);
+      end if;
       --print out the signal
-      if cup_req1(50 downto 50)="1" then
+      if cpu_req1(50 downto 50)="1" then
       	logct:=cpu_req1;
       	logsr:="cpureq1,";
       	write(linept,logsr);
@@ -75,7 +84,7 @@ begin
       	writeline(logfile,linept);
       end if;
       
-      if cup_req2(50 downto 50)="1" then
+      if cpu_req2(50 downto 50)="1" then
       	logct:=cpu_req2;
       	logsr:="cpureq2,";
       	write(linept,logsr);
@@ -99,7 +108,7 @@ begin
       end if;
       
       Clock <= '0';
-      wait for 1 ns;
+      wait for 2 ps;
     end loop;
     file_close(logfile);
   end process;
@@ -113,7 +122,7 @@ begin
        full_c=>full_c1_u
    );
    
-   cpu2: entity xil_defaultlib.CPU2(Behavioral) port map(
+   cpu2: entity xil_defaultlib.CPU(Behavioral) port map(
           Clock=>Clock,
           seed=>5,
           cpu_res=>cpu_res2,
@@ -122,10 +131,12 @@ begin
       );
     cache1: entity xil_defaultlib.L1Cache(Behavioral) port map(
          Clock=>Clock,
-         req=>cpu_req1,
+         reset=>reset,
+         cpu_req=>cpu_req1,
          snoop_req=>snoop_req1,
          bus_res=>bus_res1,
-         res=>cpu_res1,
+         cpu_res=>cpu_res1,
+         full_cprq=>full_c1_u,
          snoop_hit=>snoop_hit1,
          snoop_res=>snoop_res1,
          cache_req=>bus_req1,
@@ -136,12 +147,14 @@ begin
          full_srs=>full_srs1
           
     );
-     cache2: entity xil_defaultlib.L1Cache2(Behavioral) port map(
+     cache2: entity xil_defaultlib.L1Cache(Behavioral) port map(
             Clock=>Clock,
-            req=>cpu_req2,
+            reset=>reset,
+            cpu_req=>cpu_req2,
             snoop_req=>snoop_req2,
             bus_res=>bus_res2,
-            res=>cpu_res2,
+            cpu_res=>cpu_res2,
+            full_cprq=>full_c2_u,
             snoop_hit=>snoop_hit2,
             snoop_res=>snoop_res2,
             cache_req=>bus_req2,

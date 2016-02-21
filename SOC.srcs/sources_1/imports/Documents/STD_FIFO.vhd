@@ -41,6 +41,24 @@ begin
 				Full  <= '0';
 				Empty <= '1';
 			else
+				
+				
+				if (WriteEn = '1') then
+					if ((Looped = false) or (Head /= Tail)) then
+						-- Write Data to Memory
+						Memory(Head) := DataIn;
+						
+						-- Increment Head pointer as needed
+						if (Head = FIFO_DEPTH - 1) then
+							Head := 0;
+							
+							Looped := true;
+						else
+							Head := Head + 1;
+						end if;
+					end if;
+				end if;
+				
 				if (ReadEn = '1') then
 					if ((Looped = true) or (Head /= Tail)) then
 						-- Update data output
@@ -56,22 +74,6 @@ begin
 						end if;
 						
 						
-					end if;
-				end if;
-				
-				if (WriteEn = '1') then
-					if ((Looped = false) or (Head /= Tail)) then
-						-- Write Data to Memory
-						Memory(Head) := DataIn;
-						
-						-- Increment Head pointer as needed
-						if (Head = FIFO_DEPTH - 1) then
-							Head := 0;
-							
-							Looped := true;
-						else
-							Head := Head + 1;
-						end if;
 					end if;
 				end if;
 				

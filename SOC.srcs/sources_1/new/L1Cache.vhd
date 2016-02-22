@@ -136,9 +136,7 @@ begin
                     writeline(logfile,linept);
                     file_close(logfile);
                     
-                end if;
-                
-             
+             end if;
              wait on Clock;
         end process;
         
@@ -153,11 +151,10 @@ begin
         variable logsr: string(8 downto 1);
         
         begin
-            
                 if emp1='0' then
                 --read from the fifo
                     re1<='1';
-                    wait for 2 ps;
+                    wait for 6 ps;
                     req:=out1;
                     file_open(logfile,"C:\Users\cao2\Documents\log3.txt",write_mode);
                     logct:=req;

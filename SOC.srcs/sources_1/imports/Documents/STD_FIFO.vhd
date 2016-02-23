@@ -41,9 +41,7 @@ begin
 				Full  <= '0';
 				Empty <= '1';
 			else
-				
-				
-				if (WriteEn = '1') then
+			if (WriteEn = '1') then
 					if ((Looped = false) or (Head /= Tail)) then
 						-- Write Data to Memory
 						Memory(Head) := DataIn;

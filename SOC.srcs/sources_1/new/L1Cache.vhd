@@ -139,7 +139,7 @@ begin
 				wait for 4 ps;
 				we2<='0';
 			end if;	
-			wait on Clock
+			wait on Clock;
 		end process;
 	
 		bus_res_fifo: process
@@ -158,18 +158,33 @@ begin
         cpu_req_p:process
         variable req:std_logic_vector(50 downto 0);
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-        
+        file logfile: text;
+                 variable linept:line;
+                 variable logct: std_logic_vector(50 downto 0);
+                 variable logsr: string(8 downto 1);
+                 signal mem1:std_logic_vector(50 downto 0);
         begin
                 if emp1='0' then
                 --read from the fifo
                     re1<='1';
                     wait for 6 ps;
+                    mem1<=out1;
                     req:=out1;
-                    
                     re1<='0';
+                    file_open(logfile,"C:\Users\cao2\Documents\log1.txt",append_mode);
+                                    logct:=mem_req1;
+                                    logsr:="1mem111,";
+                                    write(linept,logsr);
+                                    write(linept,logct);
+                                    writeline(logfile,linept);
+                                    logct:=req;
+                                                                        logsr:="1req111,";
+                                                                        write(linept,logsr);
+                                                                        write(linept,logct);
+                                                                        writeline(logfile,linept);
+                                    file_close(logfile);
                     --first check if the requested data is in cache
-                    mem_req1<=req;
-                    while mem_ack1='0' loop
+                    while mem_ack1/='1' loop
                     end loop;
                     mem_req1<=nilreq;
                     --if cache have it, make the return
@@ -197,7 +212,7 @@ begin
             wait on Clock;
         end process;
         
-                --deal withe snoop request
+                        --deal withe snoop request
         snp_req_p:process
         variable req:std_logic_vector(50 downto 0);
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
@@ -252,9 +267,10 @@ begin
            wait on Clock;
         end process;
         
-        
+
+ 
         --deal with cache memory
-        mem_control_unit:process(Clock)
+        mem_control_unit:process(Clock, mem_req1, mem_req2, upd_req, write_req)
         variable res:std_logic_vector(49 downto 0);
         variable indx:integer;
         variable memcont: std_logic_vector(40 downto 0);

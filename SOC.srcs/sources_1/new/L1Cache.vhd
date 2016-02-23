@@ -71,8 +71,8 @@ architecture Behavioral of L1Cache is
 --IMB cache 1
 --3 lsb: dirty bit, valid bit, exclusive bit
 --cache hold valid bit ,dirty bit, exclusive bit, 6 bits tag, 32 bits data, 41 bits in total
-    type rom_type is array (2**10-1 downto 0) of std_logic_vector (40 downto 0);     
-    signal ROM_array : rom_type:= ((others=> (others=>'0')));
+	type rom_type is array (2**10-1 downto 0) of std_logic_vector (40 downto 0);     
+	signal ROM_array : rom_type:= ((others=> (others=>'0')));
 	signal we1,we2,we3,re1,re2,re3: std_logic:='0';
 	signal out1,out2,out3:std_logic_vector(50 downto 0);
 	signal emp1,emp2,emp3,ful1,ful2,ful3: std_logic:='0';	
@@ -90,7 +90,7 @@ begin
 		DataIn=>in1,
 		WriteEn=>we1,
 		ReadEn=>re1,
-		DataOut=>out1,
+		DataOut=> mem_req1,
 		Full=>full_cprq,
 		Empty=>emp1
 		);
@@ -115,102 +115,88 @@ begin
 		Empty=>emp3
 		);
 	
-	--read request into each fifo	
-        cpu_req_fifo: process
+	-- Store CPU requests into fifo	
+	cpu_req_fifo: process (Clock)      
+	begin
+		if rising_edge(Clock) then
+			if cpu_req(50 downto 50)="1" then
+				in1 <= cpu_req;
+				we1 <= '1';
+			else
+				we1 <= '0';
+			end if;
+		end if;
+	end process;
         
-        begin
-            if cpu_req(50 downto 50)="1" then
-                    in1<=cpu_req;
-                    we1<='1';
-                    wait for 4 ps;
-                    we1<='0';
-                    
-                    
-             end if;
-             wait on Clock;
-        end process;
-        
-       snp_req_fifo: process
-	   begin	  
-	    
-			if(snoop_req(50 downto 50)="1") then
+
+	snp_req_fifo: process (Clock)
+	begin	  
+		if rising_edge (Clock) then
+			if (snoop_req(50 downto 50)="1") then
 				in2<=snoop_req;
 				we2<='1';
-				wait for 4 ps;
+			else
 				we2<='0';
 			end if;	
-			wait on Clock;
-		end process;
+		end if;
+	end process;
 	
-		bus_res_fifo: process
-		begin
+
+	bus_res_fifo: process (Clock)
+	begin
+		if rising_edge(Clock) then			
 			if(bus_res(50 downto 50)="1") then
 				in3<=bus_res;
 				we3<='1';
-				wait for 4 ps;
+			else
 				we3<='0';
 			end if;
-			wait on Clock;
-		end process;
+		end if;
+	end process;
 		
 		
-        --deal with cpu request
-        cpu_req_p:process
-        variable req:std_logic_vector(50 downto 0);
-        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-        file logfile: text;
-                 variable linept:line;
-                 variable logct: std_logic_vector(50 downto 0);
-                 variable logsr: string(8 downto 1);
-                 signal mem1:std_logic_vector(50 downto 0);
-        begin
-                if emp1='0' then
-                --read from the fifo
-                    re1<='1';
-                    wait for 6 ps;
-                    mem1<=out1;
-                    req:=out1;
-                    re1<='0';
-                    file_open(logfile,"C:\Users\cao2\Documents\log1.txt",append_mode);
-                                    logct:=mem_req1;
-                                    logsr:="1mem111,";
-                                    write(linept,logsr);
-                                    write(linept,logct);
-                                    writeline(logfile,linept);
-                                    logct:=req;
-                                                                        logsr:="1req111,";
-                                                                        write(linept,logsr);
-                                                                        write(linept,logct);
-                                                                        writeline(logfile,linept);
-                                    file_close(logfile);
-                    --first check if the requested data is in cache
-                    while mem_ack1/='1' loop
-                    end loop;
-                    mem_req1<=nilreq;
-                    --if cache have it, make the return
-                    if hit1='1' then
-                        if req(49 downto 48)="10" then--it's write
-                            write_req<=req;
-                            while write_ack='0' loop
-                            end loop;
-                            write_req<=nilreq;
-                        end if;
-                        cpu_res1<='1'&mem_res1(49 downto 0);
-                        while ack1='0' loop
-                        end loop;
-                        --after acknowlegement, reset it to empty request
-                        cpu_res1<=nilreq;
-                    else
+	--deal with cpu request
+   cpu_req_p:process (reset, Clock)
+        		variable req:std_logic_vector(50 downto 0);
+        		variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+        		file logfile: text;
+            variable linept:line;
+				variable logct: std_logic_vector(50 downto 0);
+				variable logsr: string(8 downto 1);
+	begin
+		if (reset = '1') then
+					-- reset signals
+		elsif rising_edge(Clock) then
+			if mem_ack1 = '1' then
+				re1 <= '0'; 
+			
+				--if cache have it, make the return
+				if mem_req1(49 downto 48)="10" and hit1='1' then
+					if write_ack = '0' then--it's write
+						write_req <= mem_req1;
+					elsif write_ack = '1' then
+						write_req <= (others => '0');
+            	end if;
+         	end if;
+
+				if hit1 = '1' then
+					cpu_res1 <= '1' & mem_res1(49 downto 0);
+            	if ack1 = '1' then --after acknowlegement, reset it to empty request
+            		cpu_res1 <= (others => '0');
+            	end if;
+				end if;
+
+				if hit1 = '0' and full_crq = '0' then
                         --when cache request fifo is full, keep waiting
                         --what other option can i do
-                        while full_crq='1' loop
-                        end loop;
-                        cache_req<=req;
-                    end if;
-                end if;
-            
-            wait on Clock;
-        end process;
+                     
+					cache_req <= '1' & mem_res1;
+				end if;
+			elsif re1 = '0' and emp1 = '0' then
+				re1 <= '1';
+			end if;
+		end if;
+	end process;
         
                         --deal withe snoop request
         snp_req_p:process
@@ -270,7 +256,7 @@ begin
 
  
         --deal with cache memory
-        mem_control_unit:process(Clock, mem_req1, mem_req2, upd_req, write_req)
+	mem_control_unit:process(reset, Clock)
         variable res:std_logic_vector(49 downto 0);
         variable indx:integer;
         variable memcont: std_logic_vector(40 downto 0);
@@ -278,67 +264,65 @@ begin
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
         variable shifter:boolean:=false;
         
-        begin
-            if rising_edge(Clock) then
-            --reset all acknowlege
-            upd_ack<='0';
-            write_ack<='0';
-            mem_ack1<='0';
-            mem_ack2<='0';
-                if mem_req1(50 downto 50)="1" then
-                    indx:=to_integer(unsigned(mem_req1(41 downto 32)));
-                    memcont:=ROM_array(indx);
-                    --if we can't find it in memory
-                    if memcont=nilmem or memcont(40 downto 40)="0" or memcont(38 downto 38)="0"
+	begin
+		if (reset = '1') then
+		-- reset signals;
+		elsif rising_edge(Clock) then
+			if mem_req1(50 downto 50)="1" then
+				indx := to_integer(unsigned(mem_req1(41 downto 32)));
+         	memcont:=ROM_array(indx);
+         	--if we can't find it in memory
+         	if memcont=nilmem or memcont(40 downto 40)="0" or memcont(38 downto 38)="0"
                         or memcont(37 downto 32)/=mem_req1(47 downto 42) then
-                        mem_ack1<='1';
-                        hit1<='0';
-                    else
-                        mem_ack1<='1';
-                        hit1<='1';
-                        mem_res1<=mem_req1(49 downto 32)&memcont(31 downto 0);
-                    end if;
-                end if;
+					mem_ack1<='1';
+					hit1<='0';
+					mem_res1 <= (others => '0');
+				else
+					mem_ack1<='1';
+					hit1<='1';
+					mem_res1 <= mem_req1(49 downto 32)& memcont(31 downto 0);
+				end if;
+			end if;
                 
-                if mem_req2(50 downto 50)="1" then
-                    indx:=to_integer(unsigned(mem_req2(41 downto 32)));
-                    memcont:=ROM_array(indx);
-                    --if we can't find it in memory
-                    if memcont=nilmem or memcont(40 downto 40)="0" or memcont(38 downto 38)="0"
+
+			if mem_req2(50 downto 50)="1" then
+				indx:=to_integer(unsigned(mem_req2(41 downto 32)));
+				memcont:=ROM_array(indx);
+				-- if we can't find it in memory
+				if memcont=nilmem or memcont(40 downto 40)="0" or memcont(38 downto 38)="0"
                         or memcont(37 downto 32)/=mem_req2(47 downto 42) then
-                        mem_ack2<='1';
-                        hit2<='0';
-                    else
-                        mem_ack2<='1';
-                        hit2<='1';
-                        mem_res2<=mem_req2(49 downto 32)&memcont(31 downto 0);
-                    end if;
-                end if;
+					mem_ack2<='1';
+					hit2<='0';
+					mem_res2 <= (others => '0');
+				else
+					mem_ack2<='1';
+					hit2<='1';
+					mem_res2<=mem_req2(49 downto 32)&memcont(31 downto 0);
+				end if;
+			end if;
                 
                 --first deal with write request from cpu_request
                 --the write is only sent here if the data exist in cahce memory
                 
-                    if write_req(50 downto 50)="1" and upd_req(50 downto 50)="0" then
-                        indx:=to_integer(unsigned(write_req(41 downto 32)));
-                        ROM_array(indx)<="100"&write_req(47 downto 42)&write_req(31 downto 0);
-                        write_ack<='1';    
-                            
-                    elsif upd_req(50 downto 50)="1" and write_req(50 downto 50)="0" then
-                        indx:=to_integer(unsigned(upd_req(41 downto 32)));
-                        memcont:=ROM_array(indx);
-                        --if updating data already exist, no need to write back
-                        if memcont(37 downto 32)=upd_req(47 downto 42) then
-                            ROM_array(indx)<="100"&upd_req(47 downto 42)&upd_req(31 downto 0);
-                            upd_ack<='1';
-                        else --the position have a different data
-                            if memcont(39 downto 39)="1" then -- if it's dirty
-                                while full_wb='1' loop
-                                end loop;
-                                wb_req<="111"&memcont(37 downto 32)&upd_req(41 downto 32)&memcont(31 downto 0);
-                            end if;
-                            ROM_array(indx)<="100"&upd_req(47 downto 42)&upd_req(31 downto 0);
-                        end if;
-                    elsif upd_req(50 downto 50)="1" and write_req(50 downto 50)="1" then
+			-- Handling CPU write request (no update req from bus)
+			if write_req(50 downto 50)="1" and upd_req(50 downto 50)="0" then
+				indx := to_integer(unsigned(write_req(41 downto 32)));
+				ROM_array(indx)<="100"&write_req(47 downto 42)&write_req(31 downto 0);
+				write_ack<='1';    
+
+			-- Handling update request (no write_req from CPU)
+			elsif upd_req(50 downto 50)="1" and write_req(50 downto 50)="0" then
+				
+				indx := to_integer(unsigned(upd_req(41 downto 32)));
+				memcont := ROM_array(indx);
+				--if tags do not match, dirty bit is 1, and write_back fifo in BUS is not full, 
+				if memcont(37 downto 32) /= upd_req(47 downto 42) and memcont(39 downto 39) = "1" and full_wb = '0' then
+					wb_req <= "111"& memcont(37 downto 32)&upd_req(41 downto 32)&memcont(31 downto 0);
+				end if;
+				ROM_array(indx) <= "100" & upd_req(47 downto 42)&upd_req(31 downto 0);
+				upd_ack<='1';
+
+			elsif upd_req(50 downto 50)="1" and write_req(50 downto 50)="1" then
                         if shifter=true then
                             shifter:=false;
                             indx:=to_integer(unsigned(write_req(41 downto 32)));
@@ -354,8 +338,7 @@ begin
                                 upd_ack<='1';
                             else --the position have a different data
                                 if memcont(39 downto 39)="1" then -- if it's dirty
-                                    while full_wb='1' loop
-                                    end loop;
+                                
                                     wb_req<="111"&memcont(37 downto 32)&upd_req(41 downto 32)&memcont(31 downto 0);
                                 end if;
                                 ROM_array(indx)<="100"&upd_req(47 downto 42)&upd_req(31 downto 0);

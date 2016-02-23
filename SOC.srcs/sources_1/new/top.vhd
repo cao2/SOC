@@ -53,68 +53,36 @@ architecture Behavioral of top is
    signal full_crq1, full_srq1, full_brs1,full_wb1,full_srs1,full_crq2, full_srq2, full_brs2,full_wb2,full_srs2:std_logic;
    signal reset: std_logic:='1';
 begin
+    reset_proc : process
+    begin
+       reset <= '0';
+       wait for 10 ps;
+       reset <= '1';
+       wait for 50 ps;
+       reset <= '0';
+       wait;
+    end process;
+
     clk_gen : process
     	file logfile: text;
         variable linept:line;
         variable logct: std_logic_vector(50 downto 0);
         variable logct1: std_logic_vector(51 downto 0);
         variable logsr: string(8 downto 1);
-        variable x:integer:=0;
+        variable x : integer:=0;
     begin
     -- Generate a clock cycle
-    file_open(logfile,"C:\Users\cao2\Documents\log1.txt",write_mode);
-    reset<='1';
-    wait for 2 ps;
-    reset<='0';
     loop
-      Clock <= '1';
-      wait for 2 ps;
-      x:=x+1;
-      if x=1 then
-        x:=0;
-        file_close(logfile);
-        file_open(logfile,"C:\Users\cao2\Documents\log1.txt",append_mode);
-      end if;
-      --print out the signal
-      if cpu_req1(50 downto 50)="1" then
-      	logct:=cpu_req1;
-      	logsr:="cpureq1,";
-      	write(linept,logsr);
-      	write(linept,logct);    
-      	writeline(logfile,linept);
-      end if;
-      
-      if cpu_req2(50 downto 50)="1" then
-      	logct:=cpu_req2;
-      	logsr:="cpureq2,";
-      	write(linept,logsr);
-      	write(linept,logct);    
-      	writeline(logfile,linept);
-      end if;
-      
-      if bus_req1(50 downto 50)="1" then
-      	logct:=bus_req1;
-      	logsr:="busreq1,";
-      	write(linept,logsr);
-      	write(linept,logct);    
-      	writeline(logfile,linept);
-      end if;
-      if bus_req2(50 downto 50)="1" then
-      	logct:=bus_req2;
-      	logsr:="busreq2,";
-      	write(linept,logsr);
-      	write(linept,logct);    
-      	writeline(logfile,linept);
-      end if;
-      
       Clock <= '0';
       wait for 2 ps;
+      Clock <= '1';
+      wait for 2 ps;
     end loop;
-    file_close(logfile);
   end process;
   
   
     cpu1: entity xil_defaultlib.CPU(Behavioral) port map(
+        reset => reset,
        Clock=>Clock,
        seed=>5,
        cpu_res=>cpu_res1,
@@ -123,6 +91,7 @@ begin
    );
    
    cpu2: entity xil_defaultlib.CPU(Behavioral) port map(
+            reset => reset,
           Clock=>Clock,
           seed=>5,
           cpu_res=>cpu_res2,
@@ -140,7 +109,7 @@ begin
          snoop_hit=>snoop_hit1,
          snoop_res=>snoop_res1,
          cache_req=>bus_req1,
-         full_srq=>full_srq1,
+         full_srq=>open,
          full_brs=>full_brs1,
          full_crq=>full_crq1,
          full_wb=>full_wb1,
@@ -158,12 +127,13 @@ begin
             snoop_hit=>snoop_hit2,
             snoop_res=>snoop_res2,
             cache_req=>bus_req2,
-            full_srq=>full_srq2,
+            full_srq=>open,
          	full_brs=>full_brs2,
          	full_crq=>full_crq2,
          	full_wb=>full_wb2,
          	full_srs=>full_srs2
        );
+       
     interconnect: entity xil_defaultlib.AXI(Behavioral) port map(
         Clock=>Clock,
         cache_req1=>bus_req1,
@@ -183,7 +153,9 @@ begin
         full_b_c1=>full_b_c1,
         full_b_c2=>full_b_c2,
         full_b_m=>full_b_m,
-        full_m=>full_m
+        full_m=>full_m,
+        full_srq => full_srq1,
+        full_brs => full_brs1
     );
     mem: entity xil_defaultlib.Memory(Behavioral) port map(   
         Clock=>Clock,

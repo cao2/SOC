@@ -55,7 +55,11 @@ entity AXI is
             res2: out STD_LOGIC_VECTOR(50 downto 0);
             tomem: out STD_LOGIC_VECTOR(51 downto 0);
             snoop1: out STD_LOGIC_VECTOR(50 downto 0);
-            snoop2: out STD_LOGIC_VECTOR(50 downto 0)
+            snoop2: out STD_LOGIC_VECTOR(50 downto 0);
+            full_srq: in std_logic;
+           	full_brs: in std_logic;
+           	full_crq1,full_crq2,full_wb1,full_srs1,full_wb2,full_srs2,full_mrs: out std_logic;
+           	
                  
      );
 end AXI;
@@ -68,7 +72,73 @@ architecture Behavioral of AXI is
     type memory_type is array (31 downto 0) of std_logic_vector(53 downto 0);
     signal memory : memory_type :=(others => (others => '0'));   --memory for queue.
     signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.begin
+    
+    
+    signal in1,in2,in3,in4,in5,in6: std_logic_vector(50 downto 0);
+    signal we1,we2,we3,we4,we5,we6,re1,re2,re3,re4,re5,re6: std_logic:='0';
+	signal out1,out2,out3:std_logic_vector(50 downto 0);
+	signal emp1,emp2,emp3,emp4,emp5,emp6,,ful1,ful2,ful3,ful4,ful5,ful6: std_logic:='0';
+	
  begin  
+ 
+	cache_req_fif1: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+		CLK=>Clock,
+		RST=>reset,
+		DataIn=>in1,
+		WriteEn=>we1,
+		ReadEn=>re1,
+		DataOut=>out1,
+		
+		Full=>full_crq1,
+		Empty=>emp1
+		);
+	snp_res_fif1: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+		CLK=>Clock,
+		RST=>reset,
+		DataIn=>in2,
+		WriteEn=>we2,
+		ReadEn=>re2,
+		DataOut=>out2,
+		Full=>full_srs1,
+		Empty=>emp2
+		);
+	mem_res_fif: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+		CLK=>Clock,
+		RST=>reset,
+		DataIn=>in3,
+		WriteEn=>we3,
+		ReadEn=>re3,
+		DataOut=>out3,
+		Full=>full_mrs,
+		Empty=>emp3
+		); 
+		
+		
+	cache_req_fif2: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+		CLK=>Clock,
+		RST=>reset,
+		DataIn=>in1,
+		WriteEn=>we1,
+		ReadEn=>re1,
+		DataOut=>out1,
+		
+		Full=>full_crq1,
+		Empty=>emp1
+		);
+	snp_res_fif2: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+		CLK=>Clock,
+		RST=>reset,
+		DataIn=>in2,
+		WriteEn=>we2,
+		ReadEn=>re2,
+		DataOut=>out2,
+		Full=>full_srs1,
+		Empty=>emp2
+		);
+
+ 
+ 
+ 
   process (Clock)
         file logfile: text;
         variable linept:line;
@@ -84,6 +154,9 @@ architecture Behavioral of AXI is
         variable nada: std_logic_vector(50 downto 0):=(others=>'0');
         variable nadamem: std_logic_vector(51 downto 0):=(others=>'0');
         variable bo:boolean;
+        
+        
+        
   begin
     if (rising_edge(Clock)) then
     --first set all out signal to nil

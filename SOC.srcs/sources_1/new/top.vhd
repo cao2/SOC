@@ -52,6 +52,7 @@ architecture Behavioral of top is
    signal  memres, tomem : std_logic_vector(51 downto 0);
    signal full_crq1, full_srq1, full_brs1,full_wb1,full_srs1,full_crq2, full_srq2, full_brs2,full_wb2,full_srs2:std_logic;
    signal reset: std_logic:='1';
+   file trace_file: TEXT open write_mode is "trace.log";
 begin
 reset_proc : process
     begin
@@ -140,6 +141,7 @@ clk_gen : process
        
     interconnect: entity xil_defaultlib.AXI(Behavioral) port map(
         Clock=>Clock,
+        reset=>reset,
         cache_req1=>bus_req1,
         cache_req2=>bus_req2,
         cache_hit1=>snoop_hit1,

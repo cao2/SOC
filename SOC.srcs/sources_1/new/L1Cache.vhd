@@ -83,6 +83,10 @@ architecture Behavioral of L1Cache is
 	signal cpu_res1, cpu_res2: std_logic_vector(50 downto 0);
 	signal ack1, ack2: std_logic;
 	signal wb_req_c, wb_res_c:integer:=1;
+	
+	
+	signal prc:std_logic_vector(1 downto 0);
+	
 begin
 	cpu_req_fif: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
 		CLK=>Clock,
@@ -164,7 +168,8 @@ begin
         variable linept:line;
 		variable logct: std_logic_vector(50 downto 0);
 		variable logsr: string(8 downto 1);
-		variable tmp_write_req, tmp_cpu_res1, tmp_cache_req: std_logic_vector(50 downto 0);
+		variable tmp_write_req, tmp_cpu_res1, tmp_cache_req: std_logic_vector(50 downto 0):=(others => '0');
+		
 	begin
 		if (reset = '1') then
 					-- reset signals
@@ -172,23 +177,23 @@ begin
 			---reset cpu-res1
 			if ack1 = '1' then --after acknowlegement, reset it to empty request
         		cpu_res1 <= tmp_cpu_res1;
-        		tmp_cpu_res1 <= (others => '0');
+        		tmp_cpu_res1 := (others => '0');
         	end if;
         	---reset write_req
         	if write_ack = '1' then
 				write_req <= tmp_write_req;
-				tmp_write_req <= (others => '0');
+				tmp_write_req := (others => '0');
 			end if;
 			
 			if mem_ack1 = '1' then
 				re1 <= '0'; 
 				--if cache have it, make the return
 				if mem_req1(49 downto 48)="10" and hit1='1' then
-					if write_req(50 downto 50) = '0' then
+					if write_req(50 downto 50) = "0" then
 						write_req <= mem_req1;
 					else
 						---temporal write req hold the request that can't be sent now
-						tmp_write_req <= mem_req1;
+						tmp_write_req := mem_req1;
             		end if;
          		end if;
 				
@@ -197,25 +202,28 @@ begin
 					if cpu_res1(50 downto 50) = "1" then
 						cpu_res1 <= '1' & mem_res1(49 downto 0);
 					else
-						tmp_cpu_res1 <= '1' & mem_res1(49 downto 0);
+						tmp_cpu_res1 := '1' & mem_res1(49 downto 0);
 					end if;
 				end if;
 		
 				---here if the interconnect cache reqeust fifo is full
 				---						I put it in a tmporal variable
 				---						and when next time it's not full, re sent it
-				if hit1 = '0' and full_crq = '0' then
+				if hit1 = '0' and full_crq /= '1' then
+				    prc <= "01";
 					if tmp_cache_req(50 downto 50) ="1"	then
+					    prc <= "11";
 						cache_req <= tmp_cache_req;
-						tmp_cache_req <= '1' & mem_res1;
+						tmp_cache_req := '1' & mem_res1;
 					else
+					   prc <= "10";
 						cache_req <= '1' & mem_res1;
 					end if;
 				elsif hit1 = '0' and full_crq = '1' then
-					tmp_cache_req <= '1' & mem_res1;
-				elsif re1 = '0' and emp1 = '0' then
-					re1 <= '1';
+					tmp_cache_req := '1' & mem_res1;
 				end if;
+			elsif re1 = '0' and emp1 = '0' then
+				re1 <= '1';
 			end if;
 		end if;
 	end process;
@@ -236,8 +244,8 @@ begin
 		-- reset signals;
 			mem_res1 <= nilreq;
 			mem_res2 <= nilreq;
-			write_res <= nilreq;
-			upd_res <= nilreq;
+			write_ack <= '0';
+			upd_ack <= '0';
 		elsif rising_edge(Clock) then
 			if mem_req1(50 downto 50)="1" then
 				indx := to_integer(unsigned(mem_req1(41 downto 32)));
@@ -247,7 +255,7 @@ begin
                         or memcont(37 downto 32)/=mem_req1(47 downto 42) then
 					mem_ack1<='1';
 					hit1 <= '0';
-					mem_res1 <= (others => '0');
+					mem_res1 <= mem_req1(49 downto 0);
 				else
 					mem_ack1<='1';
 					hit1<='1';
@@ -264,7 +272,7 @@ begin
                         or memcont(37 downto 32)/=mem_req2(47 downto 42) then
 					mem_ack2<='1';
 					hit2<='0';
-					mem_res2 <= (others => '0');
+					mem_res2 <= mem_req2(49 downto 0);
 				else
 					mem_ack2<='1';
 					hit2<='1';

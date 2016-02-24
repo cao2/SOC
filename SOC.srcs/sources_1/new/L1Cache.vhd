@@ -72,7 +72,7 @@ architecture Behavioral of L1Cache is
 --3 lsb: dirty bit, valid bit, exclusive bit
 --cache hold valid bit ,dirty bit, exclusive bit, 6 bits tag, 32 bits data, 41 bits in total
 	type rom_type is array (2**10-1 downto 0) of std_logic_vector (40 downto 0);     
-	signal ROM_array : rom_type:= ((others=> (others=>'0')));
+	signal ROM_array : rom_type:= ((others => (others =>'0')));
 	signal we1,we2,we3,re1,re2,re3: std_logic:='0';
 	signal out1,out2,out3:std_logic_vector(50 downto 0);
 	signal emp1,emp2,emp3,ful1,ful2,ful3: std_logic:='0';	
@@ -164,37 +164,58 @@ begin
         variable linept:line;
 		variable logct: std_logic_vector(50 downto 0);
 		variable logsr: string(8 downto 1);
-		
+		variable tmp_write_req, tmp_cpu_res1, tmp_cache_req: std_logic_vector(50 downto 0);
 	begin
 		if (reset = '1') then
 					-- reset signals
 		elsif rising_edge(Clock) then
+			---reset cpu-res1
+			if ack1 = '1' then --after acknowlegement, reset it to empty request
+        		cpu_res1 <= tmp_cpu_res1;
+        		tmp_cpu_res1 <= (others => '0');
+        	end if;
+        	---reset write_req
+        	if write_ack = '1' then
+				write_req <= tmp_write_req;
+				tmp_write_req <= (others => '0');
+			end if;
+			
 			if mem_ack1 = '1' then
 				re1 <= '0'; 
 				--if cache have it, make the return
 				if mem_req1(49 downto 48)="10" and hit1='1' then
-					if write_ack = '0' then--it's write
+					if write_req(50 downto 50) = '0' then
 						write_req <= mem_req1;
-					elsif write_ack = '1' then
-						write_req <= (others => '0');
-            	end if;
-         	end if;
-
+					else
+						---temporal write req hold the request that can't be sent now
+						tmp_write_req <= mem_req1;
+            		end if;
+         		end if;
+				
+				---return it back to cpu if it's a cache hit
 				if hit1 = '1' then
-					cpu_res1 <= '1' & mem_res1(49 downto 0);
-            	if ack1 = '1' then --after acknowlegement, reset it to empty request
-            		cpu_res1 <= (others => '0');
-            	end if;
+					if cpu_res1(50 downto 50) = "1" then
+						cpu_res1 <= '1' & mem_res1(49 downto 0);
+					else
+						tmp_cpu_res1 <= '1' & mem_res1(49 downto 0);
+					end if;
 				end if;
-
+		
+				---here if the interconnect cache reqeust fifo is full
+				---						I put it in a tmporal variable
+				---						and when next time it's not full, re sent it
 				if hit1 = '0' and full_crq = '0' then
-                        --when cache request fifo is full, keep waiting
-                        --what other option can i do
-                     
-					cache_req <= '1' & mem_res1;
+					if tmp_cache_req(50 downto 50) ="1"	then
+						cache_req <= tmp_cache_req;
+						tmp_cache_req <= '1' & mem_res1;
+					else
+						cache_req <= '1' & mem_res1;
+					end if;
+				elsif hit1 = '0' and full_crq = '1' then
+					tmp_cache_req <= '1' & mem_res1;
+				elsif re1 = '0' and emp1 = '0' then
+					re1 <= '1';
 				end if;
-			elsif re1 = '0' and emp1 = '0' then
-				re1 <= '1';
 			end if;
 		end if;
 	end process;
@@ -207,22 +228,25 @@ begin
         variable res:std_logic_vector(49 downto 0);
         variable indx:integer;
         variable memcont: std_logic_vector(40 downto 0);
-        variable nilmem: std_logic_vector(40 downto 0):=(others=>'0');
+        variable nilmem: std_logic_vector(40 downto 0):=(others =>'0');
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
         variable shifter:boolean:=false;
-        
 	begin
 		if (reset = '1') then
 		-- reset signals;
+			mem_res1 <= nilreq;
+			mem_res2 <= nilreq;
+			write_res <= nilreq;
+			upd_res <= nilreq;
 		elsif rising_edge(Clock) then
 			if mem_req1(50 downto 50)="1" then
 				indx := to_integer(unsigned(mem_req1(41 downto 32)));
-         	memcont:=ROM_array(indx);
-         	--if we can't find it in memory
-         	if memcont=nilmem or memcont(40 downto 40)="0" or memcont(38 downto 38)="0"
+         		memcont:=ROM_array(indx);
+         		--if we can't find it in memory
+         		if memcont=nilmem or memcont(40 downto 40)="0" or memcont(38 downto 38)="0"
                         or memcont(37 downto 32)/=mem_req1(47 downto 42) then
 					mem_ack1<='1';
-					hit1<='0';
+					hit1 <= '0';
 					mem_res1 <= (others => '0');
 				else
 					mem_ack1<='1';

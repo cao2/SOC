@@ -100,7 +100,7 @@ begin
 		DataIn=>in2,
 		WriteEn=>we2,
 		ReadEn=>re2,
-		DataOut=>out2,
+		DataOut=>mem_req2,
 		Full=>full_srq,
 		Empty=>emp2
 		);
@@ -110,7 +110,7 @@ begin
 		DataIn=>in3,
 		WriteEn=>we3,
 		ReadEn=>re3,
-		DataOut=>out3,
+		DataOut=>upd_req,
 		Full=>full_brs,
 		Empty=>emp3
 		);
@@ -157,19 +157,20 @@ begin
 		
 	--deal with cpu request
    cpu_req_p:process (reset, Clock)
-        		variable req:std_logic_vector(50 downto 0);
-        		variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-        		file logfile: text;
-            variable linept:line;
-				variable logct: std_logic_vector(50 downto 0);
-				variable logsr: string(8 downto 1);
+        	
+        variable req:std_logic_vector(50 downto 0);
+        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+        file 	 logfile: text;
+        variable linept:line;
+		variable logct: std_logic_vector(50 downto 0);
+		variable logsr: string(8 downto 1);
+		
 	begin
 		if (reset = '1') then
 					-- reset signals
 		elsif rising_edge(Clock) then
 			if mem_ack1 = '1' then
 				re1 <= '0'; 
-			
 				--if cache have it, make the return
 				if mem_req1(49 downto 48)="10" and hit1='1' then
 					if write_ack = '0' then--it's write
@@ -198,61 +199,7 @@ begin
 		end if;
 	end process;
         
-                        --deal withe snoop request
-        snp_req_p:process
-        variable req:std_logic_vector(50 downto 0);
-        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-        begin
-           --first reset the output
-                snoop_res<=nilreq;
-                snoop_hit<=false;
-                
-                if emp2='0' then
-                    re2<='1';
-                    wait for 6 ps;
-                    req:=out2;
-                    mem_req2<=req;
-                    while mem_ack2='0' loop
-                    end loop;
-                    mem_req2<=nilreq;
-                    if hit2='1' then
-                        --while until fifo not full
-                        while full_srs='1' loop
-                        end loop;
-                        snoop_res<='1'&mem_res2(49 downto 0);
-                        snoop_hit<=true;
-                    else
-                        while full_srs='1' loop
-                        end loop;
-                        snoop_hit<=false;
-                        snoop_res<='1'&nilreq(49 downto 0);
-                    end if;
-                    
-                end if;
-           wait on Clock;
-        end process;
-        
-        --deal with bus response
-        bus_res_p:process
-        variable res:std_logic_vector(50 downto 0);
-        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-        begin
-           
-            
-                cpu_res<=nilreq;
-                if emp3='0' then
-                    re3<='1';
-                    wait for 6 ps;
-                    res:=out3;
-                    upd_req<=res;
-                    while upd_ack='0' loop
-                    end loop;
-                    upd_req<=nilreq;
-                    cpu_res<=res;
-                end if;
-           wait on Clock;
-        end process;
-        
+
 
  
         --deal with cache memory

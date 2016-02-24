@@ -53,7 +53,7 @@ architecture Behavioral of top is
    signal full_crq1, full_srq1, full_brs1,full_wb1,full_srs1,full_crq2, full_srq2, full_brs2,full_wb2,full_srs2:std_logic;
    signal reset: std_logic:='1';
 begin
-    reset_proc : process
+reset_proc : process
     begin
        reset <= '0';
        wait for 10 ps;
@@ -63,22 +63,26 @@ begin
        wait;
     end process;
 
-    clk_gen : process
-    	file logfile: text;
-        variable linept:line;
-        variable logct: std_logic_vector(50 downto 0);
-        variable logct1: std_logic_vector(51 downto 0);
-        variable logsr: string(8 downto 1);
-        variable x : integer:=0;
-    begin
-    -- Generate a clock cycle
-    loop
-      Clock <= '0';
-      wait for 2 ps;
-      Clock <= '1';
-      wait for 2 ps;
-    end loop;
-  end process;
+clk_gen : process
+   file logfile: text;
+       variable line_output:line;
+       variable logct: std_logic_vector(50 downto 0);
+       variable logct1: std_logic_vector(51 downto 0);
+       variable logsr: string(8 downto 1);
+       variable x : integer:=0;
+   begin
+   -- Generate a clock cycle
+   loop
+     	Clock <= '0';
+     	wait for 2 ps;
+     	Clock <= '1';
+     	wait for 2 ps;
+     	write(line_output, cpu_req1);
+		writeline(trace_file, line_output);
+		write(line_output, cpu_req2);
+		writeline(trace_file, line_output);
+   end loop;
+ end process;
   
   
     cpu1: entity xil_defaultlib.CPU(Behavioral) port map(

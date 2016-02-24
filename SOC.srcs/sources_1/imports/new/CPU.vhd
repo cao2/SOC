@@ -82,7 +82,7 @@ begin
             	new_req := "110"& rand2 & rand3;
           	end if;
       	--else if the cache buffer is full, don't send anything
-       	    end if;
+       	 end if;
        	else
        	    new_req := (others => '0');
        	end if;

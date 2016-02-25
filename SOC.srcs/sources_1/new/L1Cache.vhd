@@ -442,19 +442,13 @@ begin
                             upd_ack <='0';  
                         else
                             shifter:=true;
-                            indx:=to_integer(unsigned(upd_req(41 downto 32)));
-                            memcont:=ROM_array(indx);
-                            --if updating data already exist, no need to write back
-                            if memcont(37 downto 32)=upd_req(47 downto 42) then
-                                ROM_array(indx)<="100"&upd_req(47 downto 42)&upd_req(31 downto 0);
-                                upd_ack<='1';
-                            else --the position have a different data
-                                if memcont(39 downto 39)="1" then -- if it's dirty
-                                    wb_req<="111"&memcont(37 downto 32)&upd_req(41 downto 32)&memcont(31 downto 0);
-                                end if;
-                                ROM_array(indx)<="100"&upd_req(47 downto 42)&upd_req(31 downto 0);
-                            end if;
-                            
+                            --if tags do not match, dirty bit is 1, and write_back fifo in BUS is not full, 
+							if memcont(37 downto 32) /= upd_req(47 downto 42) and memcont(39 downto 39) = "1" and full_wb = '0' then
+								wb_req <= "111"& memcont(37 downto 32)&upd_req(41 downto 32)&memcont(31 downto 0);
+							end if;
+							ROM_array(indx) <= "100" & upd_req(47 downto 42)&upd_req(31 downto 0);
+							upd_ack<='1';
+                			write_ack<='0';
                         end if;
                         
                     end if;

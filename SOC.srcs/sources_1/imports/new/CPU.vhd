@@ -63,7 +63,7 @@ begin
      --generate the random address & cnontent
      variable rand2: std_logic_vector(15 downto 0):=selection(2**15-1,16);
      variable rand3: std_logic_vector(31 downto 0):=selection(2**15-1,32);
-        variable new_req : std_logic_vector(50 downto 0);
+     variable new_req : std_logic_vector(50 downto 0);
 
     begin
      if reset = '1' then

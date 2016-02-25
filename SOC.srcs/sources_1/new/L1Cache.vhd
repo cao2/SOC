@@ -86,6 +86,9 @@ architecture Behavioral of L1Cache is
 	
 	
 	signal prc:std_logic_vector(1 downto 0);
+	signal tmp_snp_res, tmp_upd_req: std_logic_vector(50 downto 0):=(others => '0');
+	signal tmp_snp_hit: std_logic :='0';
+	signal tmp_write_req, tmp_cpu_res1, tmp_cpu_res2, tmp_cache_req: std_logic_vector(50 downto 0):=(others => '0');
 	
 begin
 	cpu_req_fif: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
@@ -122,7 +125,10 @@ begin
 	-- Store CPU requests into fifo	
 	cpu_req_fifo: process (Clock)      
 	begin
-		if rising_edge(Clock) then
+		if reset='1' then
+			we1<='0';
+		
+		elsif rising_edge(Clock) then
 			if cpu_req(50 downto 50)="1" then
 				in1 <= cpu_req;
 				we1 <= '1';
@@ -135,7 +141,10 @@ begin
 
 	snp_req_fifo: process (Clock)
 	begin	  
-		if rising_edge (Clock) then
+		if reset='1' then
+			we2<='0';
+		
+		elsif rising_edge (Clock) then
 			if (snoop_req(50 downto 50)="1") then
 				in2<=snoop_req;
 				we2<='1';
@@ -148,7 +157,10 @@ begin
 
 	bus_res_fifo: process (Clock)
 	begin
-		if rising_edge(Clock) then			
+		if reset='1' then
+			we3<='0';
+		
+		elsif rising_edge(Clock) then			
 			if(bus_res(50 downto 50)="1") then
 				in3<=bus_res;
 				we3<='1';
@@ -157,34 +169,68 @@ begin
 			end if;
 		end if;
 	end process;
+
+	---arbitor for sending out cpu response
+	cpu_res_arbitor: process (reset, Clock)
+		variable shifter : boolean :=true;
+		variable inp: std_logic_vector(1 downto 0);
+	begin
+		if reset='1' then
+			cpu_res <= (others => '0');
 		
-		
-	--deal with cpu request
+		elsif rising_edge(Clock) then
+			inpu := cpu_res1(50 downto 50) & cpu_res2(50 downto 50);
+			case inpu is
+				when "00" --do nothing
+				when "01"
+					cpu_res <= cpu_res2;
+					ack2 <= '1';
+				when "10"
+					cpu_res <= cpu_res1;
+					ack1 <= '1';
+				when "11"
+					if shifter = true then
+						shifter := false;
+						cpu_res <= cpu_res1;
+						ack1 <= '1';
+					else
+						shifter := true;
+						cpu_res <= cpu_res2;
+						ack2 <= '1';
+					end if;
+			end case;
+		end if;
+	end process;	
+	
+	
+   --deal with cpu request
    cpu_req_p:process (reset, Clock)
-        	
-        variable req:std_logic_vector(50 downto 0);
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-        file 	 logfile: text;
-        variable linept:line;
-		variable logct: std_logic_vector(50 downto 0);
-		variable logsr: string(8 downto 1);
-		variable tmp_write_req, tmp_cpu_res1, tmp_cache_req: std_logic_vector(50 downto 0):=(others => '0');
-		
 	begin
 		if (reset = '1') then
-					-- reset signals
+			-- reset signals
+			cpu_res1 <= nilreq;
+			write_req <= nilreq;
+			cache_req <= nilreq;
 		elsif rising_edge(Clock) then
 			---reset cpu-res1
 			if ack1 = '1' then --after acknowlegement, reset it to empty request
         		cpu_res1 <= tmp_cpu_res1;
-        		tmp_cpu_res1 := (others => '0');
+        		tmp_cpu_res1 <= (others => '0');
         	end if;
         	---reset write_req
         	if write_ack = '1' then
 				write_req <= tmp_write_req;
-				tmp_write_req := (others => '0');
+				tmp_write_req <= (others => '0');
 			end if;
-			
+			---send the cache request when it's idle
+			---and reset the tmp cahce req to empty
+			if mem_ack1 ='0' then
+				if tmp_cache_req(50 downto 50) :="1" then
+					cache_req <= tmp_cache_req;
+					tmp_cache_req <= nilreq;
+				end if;
+			end if;
 			if mem_ack1 = '1' then
 				re1 <= '0'; 
 				--if cache have it, make the return
@@ -193,16 +239,16 @@ begin
 						write_req <= mem_req1;
 					else
 						---temporal write req hold the request that can't be sent now
-						tmp_write_req := mem_req1;
+						tmp_write_req <= mem_req1;
             		end if;
          		end if;
 				
 				---return it back to cpu if it's a cache hit
 				if hit1 = '1' then
-					if cpu_res1(50 downto 50) = "1" then
+					if cpu_res1(50 downto 50) = "0" then
 						cpu_res1 <= '1' & mem_res1(49 downto 0);
 					else
-						tmp_cpu_res1 := '1' & mem_res1(49 downto 0);
+						tmp_cpu_res1 <= '1' & mem_res1(49 downto 0);
 					end if;
 				end if;
 		
@@ -210,24 +256,104 @@ begin
 				---						I put it in a tmporal variable
 				---						and when next time it's not full, re sent it
 				if hit1 = '0' and full_crq /= '1' then
-				    prc <= "01";
 					if tmp_cache_req(50 downto 50) ="1"	then
-					    prc <= "11";
 						cache_req <= tmp_cache_req;
-						tmp_cache_req := '1' & mem_res1;
+						tmp_cache_req <= '1' & mem_res1;
 					else
-					   prc <= "10";
 						cache_req <= '1' & mem_res1;
 					end if;
 				elsif hit1 = '0' and full_crq = '1' then
-					tmp_cache_req := '1' & mem_res1;
+					tmp_cache_req <= '1' & mem_res1;
 				end if;
 			elsif re1 = '0' and emp1 = '0' then
 				re1 <= '1';
+				
 			end if;
 		end if;
 	end process;
         
+
+
+	--deal with cpu request
+   snp_req_p:process (reset, Clock)
+        	
+        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+		
+	begin
+		if (reset = '1') then
+			-- reset signals
+			snoop_res <= nilreq;
+			snoop_hit <='0';
+			
+		elsif rising_edge(Clock) then
+			
+			if mem_ack2 ='0' then
+				if tmp_snp_res(50 downto 50) :="1" then
+					snoop_res <= tmp_snp_res;
+					snoop_hit <= tmp_snp_hit;
+					tmp_snp_res <= nilreq;
+				end if;
+			end if;
+			
+			
+			if mem_ack2 = '1' then
+				re2 <= '0'; 
+				---check if full_srs if full
+				if full_src = '1' then
+				---if it's full, store it in a temporal variable first
+					tmp_snp_res := '1'& mem_res2;
+					tmp_snp_hit := hit2;
+				else
+					if tmp_snp_res(50 downto 50) = "1" then
+						snoop_hit <= tmp_snp_hit;
+						snoop_res <= tmp_snp_res;
+						tmp_snp_hit <= hit2;
+						tmp_snp_res <= '1'& mem_res2;
+					else
+						snoop_hit <= hit2;
+						snoop_res <= '1'& mem_res2;
+					end if;
+				end if;
+				
+			elsif re2 = '0' and emp2 = '0' then
+				re2 <= '1';
+			end if;
+		end if;
+	end process;
+
+
+	
+   ---deal with bus response
+   	bus_res_p:process (reset, Clock)
+        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+	begin
+		if (reset = '1') then
+			-- reset signals
+			cpu_res2 <= nilreq;
+			upd_req <= nilreq;
+		elsif rising_edge(Clock) then
+			---reset cpu-res2
+			if ack2 = '1' then --after acknowlegement, reset it to empty request
+        		cpu_res2 <= tmp_cpu_res2;
+        		tmp_cpu_res1 <= (others => '0');
+        	end if;
+        		
+			if upd_ack = '1' then
+				re3 <= '0'; 
+				---send it back to cpu: cpu_res2
+				if cpu_res2(50 downto 50) ="1" then
+					tmp_upd_req <= upd_req;
+				else
+					cpu_res2 <= upd_req;
+				end if;
+			elsif re3 = '0' and emp3 = '0' then
+				re3 <= '1';
+			end if;
+		end if;
+	end process;
+
+
+
 
 
  

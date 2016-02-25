@@ -157,7 +157,35 @@ begin
 			end if;
 		end if;
 	end process;
-		
+
+	---arbitor for sending out cpu response
+	cpu_res_arbitor: process (reset, Clock)
+		variable shifter : boolean :=true;
+		variable inp: std_logic_vector(1 downto 0);
+	begin
+		inpu := cpu_res1(50 downto 50) & cpu_res2(50 downto 50);
+		case inpu is
+			when "00" --do nothing
+			when "01"
+				cpu_res <= cpu_res2;
+				ack2 <= '1';
+			when "10"
+				cpu_res <= cpu_res1;
+				ack1 <= '1';
+			when "11"
+				if shifter = true then
+					shifter := false;
+					cpu_res <= cpu_res1;
+					ack1 <= '1';
+				else
+					shifter := true;
+					cpu_res <= cpu_res2;
+					ack2 <= '1';
+				end if;
+		end case;
+	end process;	
+	
+	
 		
 	--deal with cpu request
    cpu_req_p:process (reset, Clock)

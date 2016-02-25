@@ -39,18 +39,14 @@ entity AXI is
     Port (
             Clock: in std_logic;
             reset: in std_logic;
-            cache_req1 : in STD_LOGIC_VECTOR(50 downto 0):= (others => '0');
-            cache_req2: in STD_LOGIC_VECTOR(50 downto 0):= (others => '0');
+            cache_req1: in STD_LOGIC_VECTOR(50 downto 0);
+            cache_req2: in STD_LOGIC_VECTOR(50 downto 0);
             
+            wb_req1, wb_req2: in std_logic_vector(50 downto 0);
             
             memres: in STD_LOGIC_VECTOR(51 downto 0);
-            full_c1_b: in std_logic;
-            full_c2_b: in std_logic;
-            full_m: in std_logic;
-            
-            full_b_m: out std_logic:='0';
-            full_b_c1: out std_logic:='0';
-            full_b_c2: out std_logic:='0';
+           
+           
             res1: out STD_LOGIC_VECTOR(50 downto 0);    
             res2: out STD_LOGIC_VECTOR(50 downto 0);
             tomem: out STD_LOGIC_VECTOR(51 downto 0);
@@ -58,12 +54,14 @@ entity AXI is
             snoop_req1: out STD_LOGIC_VECTOR(50 downto 0);
             snoop_req2: out STD_LOGIC_VECTOR(50 downto 0);
             snoop_res1,snoop_res2: in STD_LOGIC_VECTOR(50 downto 0);
-            snp_hit1: in boolean;
-            snp_hit2: in boolean;
+            snp_hit1: in std_logic;
+            snp_hit2: in std_logic;
             
             full_srq1,full_srq2: in std_logic;
            	full_brs1,full_brs2: in std_logic;
            	full_crq1,full_crq2,full_wb1,full_srs1,full_wb2,full_srs2,full_mrs: out std_logic;
+           	full_m: in std_logic;
+            full_b_m: out std_logic:='0'
            	
                  
      );
@@ -79,9 +77,10 @@ architecture Behavioral of AXI is
     signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.begin
     
     
-    signal in1,in2,in3,in4,in5,in6,int7: std_logic_vector(50 downto 0);
+    signal in1,in2,in4,in5,in6,in7: std_logic_vector(50 downto 0);
+    signal in3,out3: std_logic_vector(51 downto 0);
     signal we1,we2,we3,we4,we5,we6,we7,re7,re1,re2,re3,re4,re5,re6: std_logic:='0';
-	signal out1,out2,out3,out4,out5,outt,ou7:std_logic_vector(50 downto 0);
+	signal out1,out2,out4,out5,out6,out7:std_logic_vector(50 downto 0);
 	signal emp1,emp2,emp3,emp4,emp5,emp6,emp7,ful7,ful1,ful2,ful3,ful4,ful5,ful6: std_logic:='0';
 	signal bus_res1_1, bus_res1_2,bus_res2_1, bus_res2_2: std_logic_vector(50 downto 0);
 	signal mem_req1, mem_req2: std_logic_vector(50 downto 50);
@@ -112,7 +111,7 @@ architecture Behavioral of AXI is
 		);
 	mem_res_fif: entity xil_defaultlib.STD_FIFO(Behavioral) 
 	generic map(
-		DATA_WIDTH => 52;
+		DATA_WIDTH => 52,
 		FIFO_DEPTH => 256
 	)
 	port map(
@@ -157,7 +156,7 @@ architecture Behavioral of AXI is
 		WriteEn=>we6,
 		ReadEn=>re6,
 		DataOut=>out6,
-		Full=>full_wbrq1,
+		Full=>full_wb1,
 		Empty=>emp6
 		); 
 	wb_fif2: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
@@ -167,17 +166,17 @@ architecture Behavioral of AXI is
 		WriteEn=>we7,
 		ReadEn=>re7,
 		DataOut=>out7,
-		Full=>full_wbrq2,
+		Full=>full_wb2,
 		Empty=>emp7
 		); 
  
-   cache_req1_fifo: process(Clock)
+   cache_req1_fifo: process(reset,Clock)
         begin
         	if reset='1' then
         		we1<='0';
             elsif rising_edge(Clock) then
             	if cache_req1(50 downto 50)="1" then
-                    in1<=cpu_req1;
+                    in1<=cache_req1;
                     we1<='1';
                 else
                 	we1<='0';
@@ -187,16 +186,16 @@ architecture Behavioral of AXI is
     end process;
         
         
-    snp_res1_fifo: process
+    snp_res1_fifo: process(reset,Clock)
 	   begin
         	if reset='1' then
         		we2<='0';
             elsif rising_edge(Clock) then
             	if snoop_res1(50 downto 50)="1" then
-            		if snoop_hit1='0' then
+            		if snp_hit1='0' then
 						in2<='0'&snoop_res1(49 downto 49);
 					else
-						in2<=cpu_req1;
+						in2<=snoop_res1;
 					end if;
                     we2<='1';
                 else
@@ -206,13 +205,13 @@ architecture Behavioral of AXI is
              end if;
 	end process;
 	
-	mem_res_fifo: process
+	mem_res_fifo: process(reset,Clock)
 		begin
         	if reset='1' then
         		we3<='0';
             elsif rising_edge(Clock) then
             	if memres(51 downto 51)="1" then
-                    in<3=cpu_req1;
+                    in3<=memres;
                     we3<='1';
                 else
                 	we3<='0';
@@ -221,13 +220,13 @@ architecture Behavioral of AXI is
              end if;
 	end process;
 	
-	cache_req2_fifo: process
+	cache_req2_fifo: process(reset,Clock)
         begin
         	if reset='1' then
         		we4<='0';
             elsif rising_edge(Clock) then
             	if cache_req2(50 downto 50)="1" then
-                    in4<=cpu_req2;
+                    in4<=cache_req2;
                     we4<='1';
                 else
                 	we4<='0';
@@ -235,13 +234,13 @@ architecture Behavioral of AXI is
              end if;
     end process;
         
-    snp_res2_fifo: process
+    snp_res2_fifo: process(reset,Clock)
 	   begin	  
         	if reset='1' then
         		we5<='0';
             elsif rising_edge(Clock) then
             	if snoop_res2(50 downto 50)="1" then
-					if snoop_hit2='0' then
+					if snp_hit2='0' then
 						in5<='0'&snoop_res2(49 downto 49);
 					else
 						in5<=snoop_res2;
@@ -253,9 +252,8 @@ architecture Behavioral of AXI is
 			end if;	
 	end process;
 	
-	wb_req1_fifo: process
-	begin	  
-	   begin
+	wb_req1_fifo: process(reset,Clock)
+	   begin	  
         	if reset='1' then
         		we6<='0';
             elsif rising_edge(Clock) then
@@ -268,7 +266,7 @@ architecture Behavioral of AXI is
 			end if;
 	end process;
 
-	wb_req2_fifo: process
+	wb_req2_fifo: process(reset,Clock)
 	begin
         	if reset='1' then
         		we6<='0';
@@ -280,18 +278,17 @@ architecture Behavioral of AXI is
 					we7<='0';
 				end if;
 			end if;	
-			wait on Clock
 	end process;
 	
 		
 	---deal with cache request
-    cache_req1_p:process
+    cache_req1_p:process(reset,Clock)
         variable req:std_logic_vector(50 downto 0);
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
         begin
         	if reset='1' then
         		re1 <= '0';
-        		snp_req2=>nilreq;
+        		snoop_req2 <= nilreq;
         	elsif rising_edge(Clock) then
                 if emp1='0' and full_srq1/='1' then
                 --read from the fifo

@@ -46,18 +46,19 @@ architecture Behavioral of top is
   -- Clock frequency and signal
    signal Clock : std_logic;
    signal full_c1_u, full_c2_u, full_b_c1, full_b_c2, full_c1_b, full_c2_b, full_b_m, full_m:std_logic;
-   signal bus_res1, bus_res2,cpu_res1, cpu_res2, cpu_req1, cpu_req2,snoop_req1,snoop_req2: std_logic_vector (50 downto 0);
-   signal snoop_hit1, snoop_hit2: boolean;
+   signal bus_res1, bus_res2,cpu_res1, cpu_res2, cpu_req1, cpu_req2,snoop_req1,snoop_req2, wb_req1, wb_req2: std_logic_vector (50 downto 0);
+   signal snoop_hit1, snoop_hit2: std_logic;
    signal snoop_res1, snoop_res2, bus_req1, bus_req2: std_logic_vector(50 downto 0);
-   signal  memres, tomem : std_logic_vector(51 downto 0);
+   signal memres, tomem : std_logic_vector(51 downto 0);
    signal full_crq1, full_srq1, full_brs1,full_wb1,full_srs1,full_crq2, full_srq2, full_brs2,full_wb2,full_srs2:std_logic;
    signal reset: std_logic:='1';
+   signal full_mrs: std_logic;
    file trace_file: TEXT open write_mode is "trace.log";
 begin
 reset_proc : process
     begin
-       reset <= '0';
-       wait for 10 ps;
+       --reset <= '0';
+       --wait for 10 ps;
        reset <= '1';
        wait for 50 ps;
        reset <= '0';
@@ -118,7 +119,8 @@ clk_gen : process
          full_brs=>full_brs1,
          full_crq=>full_crq1,
          full_wb=>full_wb1,
-         full_srs=>full_srs1
+         full_srs=>full_srs1,
+         wb_req => wb_req1
           
     );
      cache2: entity xil_defaultlib.L1Cache(Behavioral) port map(
@@ -136,7 +138,8 @@ clk_gen : process
          	full_brs=>full_brs2,
          	full_crq=>full_crq2,
          	full_wb=>full_wb2,
-         	full_srs=>full_srs2
+         	full_srs=>full_srs2,
+         	wb_req => wb_req2
        );
        
     interconnect: entity xil_defaultlib.AXI(Behavioral) port map(
@@ -144,24 +147,35 @@ clk_gen : process
         reset=>reset,
         cache_req1=>bus_req1,
         cache_req2=>bus_req2,
-        cache_hit1=>snoop_hit1,
-        cache_hit2=>snoop_hit2,
-        snoop_res1=>snoop_res1,
-        snoop_res2=>snoop_res2,
+        wb_req1 => wb_req1,
+        wb_req2 => wb_req2,
         memres=>memres,
         res1=>bus_res1,
         res2=>bus_res2,
         tomem=>tomem,
-        snoop1=>snoop_req1,
-        snoop2=>snoop_req2,
-        full_c1_b=>full_c1_b,
-        full_c2_b=>full_c2_b,
-        full_b_c1=>full_b_c1,
-        full_b_c2=>full_b_c2,
+        
+        snoop_req1=>snoop_req1,
+        snoop_req2=>snoop_req2,
+        snoop_res1=>snoop_res1,
+        snoop_res2=>snoop_res2,
+        snp_hit1=>snoop_hit1,
+        snp_hit2=>snoop_hit2,
+        
+        full_srq1 => full_srq1,
+        full_srq2 => full_srq2,
+        full_brs1 => full_brs1,
+	    full_brs2 => full_brs1,
+        full_crq1=>full_crq1,
+        full_crq2=>full_crq2,
+        full_wb1=>full_wb1,
+        full_srs1=>full_srs1,
+        full_wb2=>full_wb2,
+        full_srs2=>full_srs2,
+        full_mrs=>full_mrs,
+        
         full_b_m=>full_b_m,
-        full_m=>full_m,
-        full_srq => full_srq1,
-        full_brs => full_brs1
+        full_m=>full_m
+        
     );
     mem: entity xil_defaultlib.Memory(Behavioral) port map(   
         Clock=>Clock,

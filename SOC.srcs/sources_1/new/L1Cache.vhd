@@ -125,7 +125,10 @@ begin
 	-- Store CPU requests into fifo	
 	cpu_req_fifo: process (Clock)      
 	begin
-		if rising_edge(Clock) then
+		if reset='1' then
+			we1<='0';
+		
+		elsif rising_edge(Clock) then
 			if cpu_req(50 downto 50)="1" then
 				in1 <= cpu_req;
 				we1 <= '1';
@@ -138,7 +141,10 @@ begin
 
 	snp_req_fifo: process (Clock)
 	begin	  
-		if rising_edge (Clock) then
+		if reset='1' then
+			we2<='0';
+		
+		elsif rising_edge (Clock) then
 			if (snoop_req(50 downto 50)="1") then
 				in2<=snoop_req;
 				we2<='1';
@@ -151,7 +157,10 @@ begin
 
 	bus_res_fifo: process (Clock)
 	begin
-		if rising_edge(Clock) then			
+		if reset='1' then
+			we3<='0';
+		
+		elsif rising_edge(Clock) then			
 			if(bus_res(50 downto 50)="1") then
 				in3<=bus_res;
 				we3<='1';
@@ -166,26 +175,31 @@ begin
 		variable shifter : boolean :=true;
 		variable inp: std_logic_vector(1 downto 0);
 	begin
-		inpu := cpu_res1(50 downto 50) & cpu_res2(50 downto 50);
-		case inpu is
-			when "00" --do nothing
-			when "01"
-				cpu_res <= cpu_res2;
-				ack2 <= '1';
-			when "10"
-				cpu_res <= cpu_res1;
-				ack1 <= '1';
-			when "11"
-				if shifter = true then
-					shifter := false;
-					cpu_res <= cpu_res1;
-					ack1 <= '1';
-				else
-					shifter := true;
+		if reset='1' then
+			cpu_res <= (others => '0');
+		
+		elsif rising_edge(Clock) then
+			inpu := cpu_res1(50 downto 50) & cpu_res2(50 downto 50);
+			case inpu is
+				when "00" --do nothing
+				when "01"
 					cpu_res <= cpu_res2;
 					ack2 <= '1';
-				end if;
-		end case;
+				when "10"
+					cpu_res <= cpu_res1;
+					ack1 <= '1';
+				when "11"
+					if shifter = true then
+						shifter := false;
+						cpu_res <= cpu_res1;
+						ack1 <= '1';
+					else
+						shifter := true;
+						cpu_res <= cpu_res2;
+						ack2 <= '1';
+					end if;
+			end case;
+		end if;
 	end process;	
 	
 	

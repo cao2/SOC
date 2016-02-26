@@ -378,7 +378,27 @@ architecture Behavioral of AXI is
         variable shifter: std_logic := '0';
     begin
         if reset = '1' then
+        	mem_ack1, mem_ack2 <= '0';
         elsif rising_edge(Clock) then
+        	cmd:= tomem1(50 downto 50)& tomem2(50 downto 50);
+            case cmd is
+                when "00" =>
+                when "01" =>
+                    tomem <= '0'&tomem2;
+                    mem_ack2 <= '1';
+                when "10" =>
+                    tomem <= '1'&tomem1;
+                    mem_ack1 <= '1';
+                when "11" =>
+                    if shifter = '0' then
+                        tomem <= '0'&tomem2;
+                    	mem_ack2 <= '1';
+                    else
+                        tomem <= '1'&tomem1;
+                    	mem_ack1 <= '1';
+                    end if;
+                when others =>
+            end case;
         end if;
     end process;    
         

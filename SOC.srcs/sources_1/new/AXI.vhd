@@ -79,10 +79,10 @@ architecture Behavioral of AXI is
     signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.begin
     
     
-    signal in1,in4,in5,in6,in7: std_logic_vector(50 downto 0);
-    signal in2, out2, in3,out3: std_logic_vector(51 downto 0);
+    signal in1,in4,in6,in7: std_logic_vector(50 downto 0);
+    signal in2, out2,in5,out5,in3,out3: std_logic_vector(51 downto 0);
     signal we1,we2,we3,we4,we5,we6,we7,re7,re1,re2,re3,re4,re5,re6: std_logic:='0';
-	signal out1,out4,out5,out6,out7:std_logic_vector(50 downto 0);
+	signal out1,out4,out6,out7:std_logic_vector(50 downto 0);
 	signal emp1,emp2,emp3,emp4,emp5,emp6,emp7,ful7,ful1,ful2,ful3,ful4,ful5,ful6: std_logic:='0';
 	
 	
@@ -93,7 +93,7 @@ architecture Behavioral of AXI is
 	
 	signal tmp_brs1_1, tmp_brs1_2, tmp_brs2_1, tmp_brs2_2: std_logic_vector(50 downto 0);
 	
-	signal tomem1, tomem2 : std_logic_vector(50 downto 0);
+	signal tomem1, tomem2 : std_logic_vector(50 downto 0):=(others => '0');
     signal tmp_mem1, tmp_mem2: std_logic_vector(50 downto 0);
     
     
@@ -138,7 +138,12 @@ architecture Behavioral of AXI is
 		); 
 		
 	
-	snp_res_fif2: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+	snp_res_fif2: entity xil_defaultlib.STD_FIFO(Behavioral)
+	generic map(
+        DATA_WIDTH => 52,
+        FIFO_DEPTH => 256
+    )
+	port map(
 		CLK=>Clock,
 		RST=>reset,
 		DataIn=>in5,
@@ -180,7 +185,7 @@ architecture Behavioral of AXI is
             elsif rising_edge(Clock) then
             	if snoop_res1(50 downto 50)="1" then
             		if snp_hit1='0' then
-						in2<='0'&snoop_res1(50 downto 0);
+						in2<='0'&snoop_res1;
 					else
 						in2<='1'&snoop_res1;
 					end if;
@@ -312,16 +317,16 @@ architecture Behavioral of AXI is
                 if out5(51 downto 51) ="1" then---it's a hit
                     --send bus_res1(an arbitor)
                     if bus_res1_2(50 downto 50) ="0" then
-                        bus_res1_2 <= out5;
+                        bus_res1_2 <= out5(50 downto 0);
                     else
-                        tmp_brs1_2 <= out5;
+                        tmp_brs1_2 <= out5(50 downto 0);
                     end if;
                 else--it's a miss
                     ---send mem request
                     if tomem2(50 downto 50) = "0" then
-                        tomem2 <= out5;
+                        tomem2 <= out5(50 downto 0);
                     else
-                        tmp_mem2 <= out5;
+                        tmp_mem2 <= out5(50 downto 0);
                     end if;
                  end if;
             else

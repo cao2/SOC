@@ -77,14 +77,23 @@ architecture Behavioral of AXI is
     signal readptr,writeptr : integer range 0 to 31 := 0;  --read and write pointers.begin
     
     
-    signal in1,in2,in4,in5,in6,in7: std_logic_vector(50 downto 0);
-    signal in3,out3: std_logic_vector(51 downto 0);
+    signal in1,in4,in5,in6,in7: std_logic_vector(50 downto 0);
+    signal in2, out2, in3,out3: std_logic_vector(51 downto 0);
     signal we1,we2,we3,we4,we5,we6,we7,re7,re1,re2,re3,re4,re5,re6: std_logic:='0';
-	signal out1,out2,out4,out5,out6,out7:std_logic_vector(50 downto 0);
+	signal out1,out4,out5,out6,out7:std_logic_vector(50 downto 0);
 	signal emp1,emp2,emp3,emp4,emp5,emp6,emp7,ful7,ful1,ful2,ful3,ful4,ful5,ful6: std_logic:='0';
 	signal bus_res1_1, bus_res1_2,bus_res2_1, bus_res2_2: std_logic_vector(50 downto 0);
 	signal mem_req1, mem_req2: std_logic_vector(50 downto 50);
 	signal mem_ack1,mem_ack2,mem_ack3,mem_ack4, brs1_ack1, brs1_ack2, brs2_ack1, brs2_ack2: std_logic;
+	
+	signal bus_res1_1, bus_res1_2,bus_res2_1, bus_res2_2 : std_logic_vector(50 downto 0);
+	signal brs1_ack1, brs1_ack2,brs2_ack1, brs2_ack2 : std_logic;
+	signal tmp_brs1_1, tmp_brs1_2, tmp_brs2_1, tmp_brs2_2: std_logic_vector(50 downto 0);
+	
+	signal tomem1, tomem2 : std_logic_vector(50 downto 0);
+    signal mem_ack1, mem_ack2 : std_logic;
+    signal tmp_mem1, tmp_mem2: std_logic_vector(50 downto 0);
+	
 	
  begin  
  
@@ -125,7 +134,6 @@ architecture Behavioral of AXI is
 		Empty=>emp3
 		); 
 		
-		
 	cache_req_fif2: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
 		CLK=>Clock,
 		RST=>reset,
@@ -147,8 +155,7 @@ architecture Behavioral of AXI is
 		Full=>full_srs2,
 		Empty=>emp5
 		);
-
-
+		
 	wb_fif1: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
 		CLK=>Clock,
 		RST=>reset,
@@ -170,20 +177,7 @@ architecture Behavioral of AXI is
 		Empty=>emp7
 		); 
  
-   cache_req1_fifo: process(reset,Clock)
-        begin
-        	if reset='1' then
-        		we1<='0';
-            elsif rising_edge(Clock) then
-            	if cache_req1(50 downto 50)="1" then
-                    in1<=cache_req1;
-                    we1<='1';
-                else
-                	we1<='0';
-                end if;
-                   
-             end if;
-    end process;
+   
         
         
     snp_res1_fifo: process(reset,Clock)
@@ -193,9 +187,9 @@ architecture Behavioral of AXI is
             elsif rising_edge(Clock) then
             	if snoop_res1(50 downto 50)="1" then
             		if snp_hit1='0' then
-						in2<='0'&snoop_res1(49 downto 49);
+						in2<='0'&snoop_res1(50 downto 0);
 					else
-						in2<=snoop_res1;
+						in2<='1'&snoop_res1;
 					end if;
                     we2<='1';
                 else
@@ -220,19 +214,7 @@ architecture Behavioral of AXI is
              end if;
 	end process;
 	
-	cache_req2_fifo: process(reset,Clock)
-        begin
-        	if reset='1' then
-        		we4<='0';
-            elsif rising_edge(Clock) then
-            	if cache_req2(50 downto 50)="1" then
-                    in4<=cache_req2;
-                    we4<='1';
-                else
-                	we4<='0';
-                end if;
-             end if;
-    end process;
+	
         
     snp_res2_fifo: process(reset,Clock)
 	   begin	  
@@ -241,9 +223,9 @@ architecture Behavioral of AXI is
             elsif rising_edge(Clock) then
             	if snoop_res2(50 downto 50)="1" then
 					if snp_hit2='0' then
-						in5<='0'&snoop_res2(49 downto 49);
+						in5<='0' & snoop_res2;
 					else
-						in5<=snoop_res2;
+						in5<='1' & snoop_res2;
 					end if;
 					we5<='1';
 				else
@@ -268,36 +250,137 @@ architecture Behavioral of AXI is
 
 	wb_req2_fifo: process(reset,Clock)
 	begin
-        	if reset='1' then
-        		we6<='0';
-            elsif rising_edge(Clock) then
-				if(wb_req2(50 downto 50)="1") then
-					in7<=wb_req2;
-					we7<='1';
-				else
-					we7<='0';
-				end if;
-			end if;	
+        if reset='1' then
+        	we6<='0';
+        elsif rising_edge(Clock) then
+			if(wb_req2(50 downto 50)="1") then
+				in7<=wb_req2;
+				we7<='1';
+			else
+				we7<='0';
+			end if;
+		end if;	
 	end process;
 	
 		
 	---deal with cache request
     cache_req1_p:process(reset,Clock)
-        variable req:std_logic_vector(50 downto 0);
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-        begin
-        	if reset='1' then
-        		re1 <= '0';
-        		snoop_req2 <= nilreq;
-        	elsif rising_edge(Clock) then
-                if emp1='0' and full_srq1/='1' then
-                --read from the fifo
-                    re1<='1';
-                else
-                    re1<='0';  
-                end if;
+    begin
+        if reset='1' then
+        	snoop_req2 <= nilreq;
+        elsif rising_edge(Clock) then
+            snoop_req2 <= nilreq;
+            if cache_req1(50 downto 50) = "1" and full_crq1/='1' then
+                snoop_req2 <= cache_req1;
             end if;
+        end if;
+    end process;
+    
+	---deal with cache request
+    cache_req2_p:process(reset,Clock)
+        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+    begin
+        if reset='1' then
+            snoop_req1 <= nilreq;
+        elsif rising_edge(Clock) then
+            snoop_req1 <= nilreq;
+            if cache_req2(50 downto 50) = "1" and full_crq2/='1' then
+                snoop_req1 <= cache_req2;
+            end if;
+        end if;
+    end process;    
+    
+    
+    
+    
+    snp_res2_p: process(reset, Clock)
+        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+    begin
+        if reset = '1' then
+            r5 <= '0';
+            bus_res1_2 <= nilreq;
+            tomem2 <= nilreq;
+            tmp_brs1_2 <= nilreq;
+            tmp_mem2 <=nilreq;
+            
+        elsif rising_edge(Clock) then
+            ---here we are waiting for the fifo
+            if bus_res1_ack2 ='1' then
+                bus_res1_2 <= tmp_brs1_2;
+            end if;
+            
+            if mem_ack2 = '1' then
+                tomem2 <= tmp_mem2;
+            end if;
+            
+            if out5(50 downto 50) = "1" then
+                if out5(51 downto 51) ="1" then---it's a hit
+                    --send bus_res1(an arbitor)
+                    if bus_res1_2(50 downto 50) ="0" then
+                        bus_res1_2 <= out5;
+                    else
+                        tmp_brs1_2 <= out5;
+                    end if;
+                else--it's a miss
+                    ---send mem request
+                    if tomem2(50 downto 50) = "0" then
+                        tomem2 <= out5;
+                    else
+                        tmp_mem2 <= out5;
+                    end if;
+                 end if;
+            else
+                r5 <= '1';
+            end if;
+        end if;
     end process;
     
     
+    --bus_res1 arbitor
+    brs1_arbitor: process(reset,Clock)
+        variable nilreq : std_logic_vector(50 downto 0):=(others => '0');
+        variable cmd: std_logic_vector( 1 downto 0);
+        variable shifter: std_logic := '0';
+    begin  
+        if reset ='1'  then
+            brs1_ack1 <= '0';
+            brs1_ack2 <= '0';
+        elsif rising_edge(Clock) then
+            cmd:= bus_res1_1(50 downto 50)& bus_res1_2(50 downto 50);
+            case cmd is
+                when "00" =>
+                when "01" =>
+                    bus_res1 <= bus_res1_2;
+                    brs1_ack2 <= '1';
+                when "10" =>
+                    bus_res1 <= bus_res1_1;
+                    brs1_ack1 <= '1';
+                when "11" =>
+                    if shifter = '0' then
+                        shifter := '1';
+                        bus_res1 <= bus_res1_2;
+                        brs1_ack2 <= '1';
+                    else
+                        shifter := '0';
+                        bus_res1 <= bus_res1_1;
+                        brs1_ack1 <= '1';
+                    end if;
+                when others =>
+            end case;
+        end if;
+    end process; 
+        
+    --tomem aribitor
+    tomem_arbitor: process (reset, Clock)
+        variable nilreq : std_logic_vector(50 downto 0):=(others => '0');
+        variable cmd: std_logic_vector( 1 downto 0);
+        variable shifter: std_logic := '0';
+    begin
+        if reset = '1' then
+        elsif rising_edge(Clock) then
+        end if;
+    end process;    
+        
+        
 end Behavioral;

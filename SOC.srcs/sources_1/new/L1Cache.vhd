@@ -127,7 +127,6 @@ begin
 	begin
 		if reset='1' then
 			we1<='0';
-		
 		elsif rising_edge(Clock) then
 			if cpu_req(50 downto 50)="1" then
 				in1 <= cpu_req;
@@ -203,7 +202,8 @@ begin
 		end if;
 	end process;	
 	
-	
+-------prblem:
+--------it seems when it send cache request, the request is never reset back to empty
    --deal with cpu request
    cpu_req_p:process (reset, Clock)
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
@@ -214,7 +214,7 @@ begin
 			write_req <= nilreq;
 			cache_req <= nilreq;
 		elsif rising_edge(Clock) then
-		     cache_req <= nilreq;
+		     --cache_req <= nilreq;
 			---reset cpu-res1
 			if ack1 = '1' then --after acknowlegement, reset it to empty request
         		cpu_res1 <= tmp_cpu_res1;
@@ -233,18 +233,18 @@ begin
 					tmp_cache_req <= nilreq;
 				end if;
 			end if;
+			
 			if mem_ack1 = '1' then
 				re1 <= '0'; 
 				--if cache have it, make the return
 				if mem_req1(49 downto 48)="10" and hit1='1' then
 					if write_req(50 downto 50) = "0" then
-						write_req <= mem_req1;
+						 write_req <= mem_req1;
 					else
 						---temporal write req hold the request that can't be sent now
 						tmp_write_req <= mem_req1;
             		end if;
          		end if;
-				
 				---return it back to cpu if it's a cache hit
 				if hit1 = '1' then
 					if cpu_res1(50 downto 50) = "0" then
@@ -253,7 +253,6 @@ begin
 						tmp_cpu_res1 <= '1' & mem_res1(49 downto 0);
 					end if;
 				end if;
-		
 				---here if the interconnect cache reqeust fifo is full
 				---						I put it in a tmporal variable
 				---						and when next time it's not full, re sent it
@@ -269,7 +268,6 @@ begin
 				end if;
 			elsif re1 = '0' and emp1 = '0' then
 				re1 <= '1';
-				
 			end if;
 		end if;
 	end process;
@@ -298,7 +296,8 @@ begin
 			end if;
 
 			if mem_ack2 = '1' then
-				re2 <= '0'; 
+				re2 <= '0';
+				
 				---check if full_srs if full
 				if full_srs = '1' then
 				---if it's full, store it in a temporal variable first
@@ -315,7 +314,6 @@ begin
 						snoop_res <= '1'& mem_res2;
 					end if;
 				end if;
-				
 			elsif re2 = '0' and emp2 = '0' then
 				re2 <= '1';
 			end if;
@@ -343,7 +341,7 @@ begin
 				re3 <= '0'; 
 				---send it back to cpu: cpu_res2
 				if cpu_res2(50 downto 50) ="1" then
-					tmp_upd_req <= upd_req;
+					tmp_cpu_res1 <= upd_req;
 				else
 					cpu_res2 <= upd_req;
 				end if;
@@ -390,7 +388,7 @@ begin
 					mem_res1 <= mem_req1(49 downto 32)& memcont(31 downto 0);
 				end if;
 			else
-			     mem_ack1<='0';
+			    mem_ack1<='0';
 			end if;
                 
 

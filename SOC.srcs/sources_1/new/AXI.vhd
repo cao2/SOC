@@ -208,7 +208,7 @@ architecture Behavioral of AXI is
 	end process;
 	
 	
-        
+        ----stcucked here
     snp_res2_fifo: process(reset,Clock)
 	   begin	  
         	if reset='1' then
@@ -216,9 +216,9 @@ architecture Behavioral of AXI is
             elsif rising_edge(Clock) then
             	if snoop_res2(50 downto 50)="1" then
 					if snp_hit2='0' then
-						in5<='0' & snoop_res2;
+						in5 <='0'&snoop_res2;
 					else
-						in5<='1' & snoop_res2;
+						in5<='1'&snoop_res2;
 					end if;
 					we5<='1';
 				else

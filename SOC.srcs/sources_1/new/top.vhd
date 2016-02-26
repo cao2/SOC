@@ -152,8 +152,8 @@ clk_gen : process
         wb_req1 => wb_req1,
         wb_req2 => wb_req2,
         memres=>memres,
-        res1=>bus_res1,
-        res2=>bus_res2,
+        bus_res1=>bus_res1,
+        bus_res2=>bus_res2,
         tomem=>tomem,
         
         snoop_req1=>snoop_req1,

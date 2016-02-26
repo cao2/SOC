@@ -47,8 +47,8 @@ entity AXI is
             memres: in STD_LOGIC_VECTOR(51 downto 0);
            
            
-            res1: out STD_LOGIC_VECTOR(50 downto 0);    
-            res2: out STD_LOGIC_VECTOR(50 downto 0);
+            bus_res1: out STD_LOGIC_VECTOR(50 downto 0);    
+            bus_res2: out STD_LOGIC_VECTOR(50 downto 0);
             tomem: out STD_LOGIC_VECTOR(51 downto 0);
             
             snoop_req1: out STD_LOGIC_VECTOR(50 downto 0);
@@ -84,16 +84,16 @@ architecture Behavioral of AXI is
     signal we1,we2,we3,we4,we5,we6,we7,re7,re1,re2,re3,re4,re5,re6: std_logic:='0';
 	signal out1,out4,out5,out6,out7:std_logic_vector(50 downto 0);
 	signal emp1,emp2,emp3,emp4,emp5,emp6,emp7,ful7,ful1,ful2,ful3,ful4,ful5,ful6: std_logic:='0';
+	
+	
 	signal bus_res1_1, bus_res1_2,bus_res2_1, bus_res2_2: std_logic_vector(50 downto 0);
 	signal mem_req1, mem_req2: std_logic_vector(50 downto 50);
-	signal mem_ack1,mem_ack2,mem_ack3,mem_ack4, brs1_ack1, brs1_ack2, brs2_ack1, brs2_ack2: std_logic;
+	signal mem_ack1,mem_ack2, brs1_ack1, brs1_ack2, brs2_ack1, brs2_ack2: std_logic;
 	
-	signal bus_res1_1, bus_res1_2,bus_res2_1, bus_res2_2 : std_logic_vector(50 downto 0);
-	signal brs1_ack1, brs1_ack2,brs2_ack1, brs2_ack2 : std_logic;
+	
 	signal tmp_brs1_1, tmp_brs1_2, tmp_brs2_1, tmp_brs2_2: std_logic_vector(50 downto 0);
 	
 	signal tomem1, tomem2 : std_logic_vector(50 downto 0);
-    signal mem_ack1, mem_ack2 : std_logic;
     signal tmp_mem1, tmp_mem2: std_logic_vector(50 downto 0);
     
     
@@ -103,18 +103,13 @@ architecture Behavioral of AXI is
 	
  begin  
  
-	cache_req_fif1: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
-		CLK=>Clock,
-		RST=>reset,
-		DataIn=>in1,
-		WriteEn=>we1,
-		ReadEn=>re1,
-		DataOut=>snoop_req2,
-		Full=>full_crq1,
-		Empty=>emp1
-		);
-		
-	snp_res_fif1: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
+	
+	snp_res_fif1: entity xil_defaultlib.STD_FIFO(Behavioral) 
+	generic map(
+        DATA_WIDTH => 52,
+        FIFO_DEPTH => 256
+    )
+    port map(
 		CLK=>Clock,
 		RST=>reset,
 		DataIn=>in2,
@@ -124,6 +119,8 @@ architecture Behavioral of AXI is
 		Full=>full_srs1,
 		Empty=>emp2
 		);
+		
+	
 	mem_res_fif: entity xil_defaultlib.STD_FIFO(Behavioral) 
 	generic map(
 		DATA_WIDTH => 52,
@@ -140,17 +137,7 @@ architecture Behavioral of AXI is
 		Empty=>emp3
 		); 
 		
-	cache_req_fif2: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
-		CLK=>Clock,
-		RST=>reset,
-		DataIn=>in4,
-		WriteEn=>we4,
-		ReadEn=>re4,
-		DataOut=>out4,
-		
-		Full=>full_crq2,
-		Empty=>emp4
-		);
+	
 	snp_res_fif2: entity xil_defaultlib.STD_FIFO(Behavioral) port map(
 		CLK=>Clock,
 		RST=>reset,
@@ -277,7 +264,7 @@ architecture Behavioral of AXI is
         	snoop_req2 <= nilreq;
         elsif rising_edge(Clock) then
             snoop_req2 <= nilreq;
-            if cache_req1(50 downto 50) = "1" and full_crq1/='1' then
+            if cache_req1(50 downto 50) = "1" and full_srq1/='1' then
                 snoop_req2 <= cache_req1;
             end if;
         end if;
@@ -291,7 +278,7 @@ architecture Behavioral of AXI is
             snoop_req1 <= nilreq;
         elsif rising_edge(Clock) then
             snoop_req1 <= nilreq;
-            if cache_req2(50 downto 50) = "1" and full_crq2/='1' then
+            if cache_req2(50 downto 50) = "1" and full_srq2/='1' then
                 snoop_req1 <= cache_req2;
             end if;
         end if;
@@ -304,7 +291,7 @@ architecture Behavioral of AXI is
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
     begin
         if reset = '1' then
-            r5 <= '0';
+            re5 <= '0';
             bus_res1_2 <= nilreq;
             tomem2 <= nilreq;
             tmp_brs1_2 <= nilreq;
@@ -312,7 +299,7 @@ architecture Behavioral of AXI is
             
         elsif rising_edge(Clock) then
             ---here we are waiting for the fifo
-            if bus_res1_ack2 ='1' then
+            if brs1_ack2 ='1' then
                 bus_res1_2 <= tmp_brs1_2;
             end if;
             
@@ -321,6 +308,7 @@ architecture Behavioral of AXI is
             end if;
             
             if out5(50 downto 50) = "1" then
+                re5 <= '0';
                 if out5(51 downto 51) ="1" then---it's a hit
                     --send bus_res1(an arbitor)
                     if bus_res1_2(50 downto 50) ="0" then
@@ -337,7 +325,7 @@ architecture Behavioral of AXI is
                     end if;
                  end if;
             else
-                r5 <= '1';
+                re5 <= '1';
             end if;
         end if;
     end process;

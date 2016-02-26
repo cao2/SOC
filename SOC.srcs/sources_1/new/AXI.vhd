@@ -61,7 +61,9 @@ entity AXI is
            	full_brs1,full_brs2: in std_logic;
            	full_crq1,full_crq2,full_wb1,full_srs1,full_wb2,full_srs2,full_mrs: out std_logic;
            	full_m: in std_logic;
-            full_b_m: out std_logic:='0'
+            full_b_m: out std_logic:='0';
+            
+            mem_wb: out std_logic_vector(50 downto 0)
            	
                  
      );
@@ -93,6 +95,10 @@ architecture Behavioral of AXI is
 	signal tomem1, tomem2 : std_logic_vector(50 downto 0);
     signal mem_ack1, mem_ack2 : std_logic;
     signal tmp_mem1, tmp_mem2: std_logic_vector(50 downto 0);
+    
+    
+    signal wb_ack1, wb_ack2 : std_logic;
+    signal mem_wb1, mem_wb2, tmp_mem_wb1, tmp_mem_wb2 : std_logic_vector (50 downto 0);
 	
 	
  begin  
@@ -397,6 +403,40 @@ architecture Behavioral of AXI is
                     else
                         tomem <= '1'&tomem1;
                     	mem_ack1 <= '1';
+                    end if;
+                when others =>
+            end case;
+        end if;
+    end process;    
+    
+    
+   
+    --write back  aribitor
+    wb_arbitor: process (reset, Clock)
+        variable nilreq : std_logic_vector(50 downto 0):=(others => '0');
+        variable cmd: std_logic_vector( 1 downto 0);
+        variable shifter: std_logic := '0';
+    begin
+        if reset = '1' then
+        	wb_ack1 <= '0';
+        	wb_ack2 <= '0';
+        elsif rising_edge(Clock) then
+        	cmd:= mem_wb1(50 downto 50)& mem_wb2(50 downto 50);
+            case cmd is
+                when "00" =>
+                when "01" =>
+                    mem_wb <= '0'&mem_wb2;
+                    wb_ack2 <= '1';
+                when "10" =>
+                    mem_wb <= '1'&mem_wb1;
+                    wb_ack1 <= '1';
+                when "11" =>
+                    if shifter = '0' then
+                        mem_wb <= '0'&mem_wb2;
+                    	wb_ack2 <= '1';
+                    else
+                        mem_wb <= '1'&mem_wb1;
+                    	wb_ack1 <= '1';
                     end if;
                 when others =>
             end case;

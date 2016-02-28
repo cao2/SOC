@@ -55,6 +55,7 @@ architecture Behavioral of top is
    signal full_mrs: std_logic;
    
    signal mem_wb: std_logic_vector(50 downto 0);
+   signal wb_ack: std_logic;
    file trace_file: TEXT open write_mode is "trace.log";
 begin
 reset_proc : process
@@ -178,12 +179,15 @@ clk_gen : process
         full_b_m=>full_b_m,
         full_m=>full_m,
         
-        mem_wb => mem_wb
+        mem_wb => mem_wb,
+        wb_ack => wb_ack
         
     );
     mem: entity xil_defaultlib.Memory(Behavioral) port map(   
         Clock=>Clock,
         req=>tomem,
+        wb_req => mem_wb,
+        wb_ack => wb_ack,
         res=>memres,
         full_b_m=>full_b_m,
         full_m=>full_m

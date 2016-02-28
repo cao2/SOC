@@ -63,7 +63,8 @@ entity AXI is
            	full_m: in std_logic;
             full_b_m: out std_logic:='0';
             
-            mem_wb: out std_logic_vector(50 downto 0)
+            mem_wb: out std_logic_vector(50 downto 0);
+            wb_ack: in std_logic;
            	
                  
      );
@@ -213,7 +214,63 @@ architecture Behavioral of AXI is
 	end process;
 	
 	
+<<<<<<< Updated upstream
         ----stcucked here
+=======
+	    
+    ---mem_res process
+    mem_res_p: process(reset,Clock)
+    	variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+    	variable stage: int :=0;
+    	variable cpu1 : std_logic;
+    begin
+    	if reset= '1'; then
+    		bus_res1 <= nilreq;
+    		bus_res2 <= nilreq;
+    	elsif rising_edge(Clock) then
+    	
+    		if stage = 0 then
+    			if re3 = '0' and emp3 ='0' then
+    				re3 <='1';
+    				stage :=1;
+    			end if;
+    		end if;
+    		
+    		if stage = 1 then
+    			if out3(50 downto 50) = '1' then
+    				stage :=2;
+    				---response for cpu1
+    				if out3(51 downto 51) ='1'  then
+    					bus_res1_2 <= out3(50 downto 0);
+    					cpu1 := '1';
+    				---response for cpu2
+    				else
+    					bus_res2_2 <= out3(50 downto 0);
+    					cpu1 := '0';
+    				end if;
+    				re3 <= '0';
+    			end if;
+    		end if;
+    		
+    		if stage = 2 then
+    			if cpu1 ='1' and brs1_ack2 = '1' then
+    				bus_res1_2 <= nilreq;
+    				stage :=0;
+    			elsif cpu1 ='0' and brs2_ack2 ='1' then
+    				bus_res2_2 <= nilreq;
+    				stage :=0;
+    			end if;
+    		end if;	
+    	end if;
+    	
+    end process;
+    
+    
+	
+	
+	
+        
+>>>>>>> Stashed changes
     snp_res2_fifo: process(reset,Clock)
 	   begin	  
         	if reset='1' then
@@ -312,8 +369,13 @@ architecture Behavioral of AXI is
                 tomem2 <= tmp_mem2;
             end if;
             
+            ---if out is valid, read complete, reset read enable to 0
             if out5(50 downto 50) = "1" then
+<<<<<<< Updated upstream
                 re5 <= '0';
+=======
+            	
+>>>>>>> Stashed changes
                 if out5(51 downto 51) ="1" then---it's a hit
                     --send bus_res1(an arbitor)
                     if bus_res1_2(50 downto 50) ="0" then
@@ -329,11 +391,37 @@ architecture Behavioral of AXI is
                         tmp_mem2 <= out5(50 downto 0);
                     end if;
                  end if;
+<<<<<<< Updated upstream
             else
                 re5 <= '1';
+=======
+                 r5 <= '0';
+            elsif r5 = '0' and emp5 = '0' then
+                r5 <= '1';
+>>>>>>> Stashed changes
             end if;
         end if;
     end process;
+    
+    ---mem_res process
+    mem_res_p: process(reset,Clock)
+    begin
+    	if reset= '1'; then
+    		
+    	elsif rising_edge(Clock) then
+    		
+    	end if;
+    	
+    end process;
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     --bus_res1 arbitor
@@ -346,6 +434,8 @@ architecture Behavioral of AXI is
             brs1_ack1 <= '0';
             brs1_ack2 <= '0';
         elsif rising_edge(Clock) then
+        	brs1_ack1 <= '0';
+            brs1_ack2 <= '0';
             cmd:= bus_res1_1(50 downto 50)& bus_res1_2(50 downto 50);
             case cmd is
                 when "00" =>
@@ -414,6 +504,8 @@ architecture Behavioral of AXI is
         	wb_ack1 <= '0';
         	wb_ack2 <= '0';
         elsif rising_edge(Clock) then
+        	wb_ack1 <= '0';
+        	wb_ack2 <= '0';
         	cmd:= mem_wb1(50 downto 50)& mem_wb2(50 downto 50);
             case cmd is
                 when "00" =>

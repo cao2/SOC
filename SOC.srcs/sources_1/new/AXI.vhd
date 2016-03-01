@@ -344,6 +344,7 @@ architecture Behavioral of AXI is
     
     snp_res1_p: process(reset, Clock)
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+        variable state: integer:= 0;
     begin
         if reset = '1' then
             re2 <= '0';
@@ -353,7 +354,7 @@ architecture Behavioral of AXI is
             ---tmp_mem1 <=nilreq;
         elsif rising_edge(Clock) then
         
-        	if state =0 then
+            if state =0 then
                 if re2 ='0' and emp2 ='0' then
                     re2 <= '1';
                     state := 1;
@@ -389,8 +390,7 @@ architecture Behavioral of AXI is
            
         end if;
     end process;   
-    
-    
+     
     snp_res2_p: process(reset, Clock)
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
         variable state: integer :=0;
@@ -454,6 +454,7 @@ architecture Behavioral of AXI is
             cmd:= bus_res2_1(50 downto 50)& bus_res2_2(50 downto 50);
             case cmd is
                 when "00" =>
+                    bus_res2 <= nilreq;
                 when "01" =>
                     bus_res2 <= bus_res2_2(50 downto 0);
                     brs2_ack2 <= '1';
@@ -484,6 +485,8 @@ architecture Behavioral of AXI is
         if reset ='1'  then
             brs1_ack1 <= '0';
             brs1_ack2 <= '0';
+            bus_res1_1 <= nilreq;
+            bus_res1_2 <= nilreq;
         elsif rising_edge(Clock) then
         	brs1_ack1 <= '0';
             brs1_ack2 <= '0';

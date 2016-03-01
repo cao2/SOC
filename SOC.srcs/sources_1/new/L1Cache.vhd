@@ -325,6 +325,7 @@ begin
    ---deal with bus response
    	bus_res_p:process (reset, Clock)
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+        variable state: integer :=0
 	begin
 		if (reset = '1') then
 			-- reset signals
@@ -332,22 +333,28 @@ begin
 			upd_req <= nilreq;
 		elsif rising_edge(Clock) then
 			---reset cpu-res2
-			if ack2 = '1' then --after acknowlegement, reset it to empty request
-        		cpu_res2 <= tmp_cpu_res2;
-        		tmp_cpu_res1 <= (others => '0');
-        	end if;
-        		
-			if upd_ack = '1' then
-				re3 <= '0'; 
-				---send it back to cpu: cpu_res2
-				if cpu_res2(50 downto 50) ="1" then
-					tmp_cpu_res1 <= upd_req;
-				else
-					cpu_res2 <= upd_req;
+			if state = 0 then
+				if re3 ='0' and emp3 ='0' then
+					re3 <= '1';
+					state := 1;
 				end if;
-			elsif re3 = '0' and emp3 = '0' then
-				re3 <= '1';
 			end if;
+			
+			if state =1 then
+				if upd_ack ='1' then
+					re3 <= '0';
+					cpu_res2 <= upd_req;
+					state :=2;
+				end if;
+			end if;
+			
+			if stage =2 then
+				if ack2 = '1' then
+					cpu_res2 <= nilreq;
+					state := 0;
+				end if;
+			end if;
+			
 		end if;
 	end process;
 

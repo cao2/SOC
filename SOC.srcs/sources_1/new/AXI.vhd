@@ -320,6 +320,8 @@ architecture Behavioral of AXI is
             snoop_req2 <= nilreq;
             if cache_req1(50 downto 50) = "1" and full_srq1/='1' then
                 snoop_req2 <= cache_req1;
+            else
+            	snoop_req2 <= nilreq;
             end if;
         end if;
     end process;
@@ -334,6 +336,8 @@ architecture Behavioral of AXI is
             snoop_req1 <= nilreq;
             if cache_req2(50 downto 50) = "1" and full_srq2/='1' then
                 snoop_req1 <= cache_req2;
+            else 	
+            	snoop_req1 <= nilreq;
             end if;
         end if;
     end process;    
@@ -347,7 +351,6 @@ architecture Behavioral of AXI is
             tomem1 <= nilreq;
             tmp_brs2_1 <= nilreq;
             tmp_mem1 <=nilreq;
-            
         elsif rising_edge(Clock) then
             ---here we are waiting for the fifo
             if brs2_ack1 ='1' then
@@ -442,6 +445,7 @@ architecture Behavioral of AXI is
         elsif rising_edge(Clock) then
             brs2_ack1 <= '0';
             brs2_ack2 <= '0';
+            bus_res2 <= nilreq;
             cmd:= bus_res2_1(50 downto 50)& bus_res2_2(50 downto 50);
             case cmd is
                 when "00" =>
@@ -478,6 +482,7 @@ architecture Behavioral of AXI is
         elsif rising_edge(Clock) then
         	brs1_ack1 <= '0';
             brs1_ack2 <= '0';
+            bus_res1 <= nilreq;
             cmd:= bus_res1_1(50 downto 50)& bus_res1_2(50 downto 50);
             case cmd is
                 when "00" =>
@@ -511,6 +516,7 @@ architecture Behavioral of AXI is
         if reset = '1' then
         	mem_ack1 <= '0';
         	mem_ack2 <= '0';
+        	tomem <= '0'& nilreq;
         elsif rising_edge(Clock) then
         	cmd:= tomem1(50 downto 50)& tomem2(50 downto 50);
             case cmd is
@@ -548,6 +554,7 @@ architecture Behavioral of AXI is
         elsif rising_edge(Clock) then
         	wb_ack1 <= '0';
         	wb_ack2 <= '0';
+        	mem<= '0'&nilreq;
         	cmd:= mem_wb1(50 downto 50)& mem_wb2(50 downto 50);
             case cmd is
                 when "00" =>

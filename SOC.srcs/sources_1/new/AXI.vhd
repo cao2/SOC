@@ -349,41 +349,44 @@ architecture Behavioral of AXI is
             re2 <= '0';
             bus_res2_1 <= nilreq;
             tomem1 <= nilreq;
-            tmp_brs2_1 <= nilreq;
-            tmp_mem1 <=nilreq;
+            ---tmp_brs2_1 <= nilreq;
+            ---tmp_mem1 <=nilreq;
         elsif rising_edge(Clock) then
-            ---here we are waiting for the fifo
-            if brs2_ack1 ='1' then
-                bus_res2_1 <= tmp_brs2_1;
+        
+        	if state =0 then
+                if re2 ='0' and emp2 ='0' then
+                    re2 <= '1';
+                    state := 1;
+                end if;
             end if;
             
-            if mem_ack1 = '1' then
-                tomem1 <= tmp_mem1;
-                tmp_mem1 <=(others => '0');
+            if state =1 then
+                if out2(50 downto 50) = "1" then
+                    re2 <= '0';
+                    if out2(51 downto 51) = "1" then --it;s a hit
+                        state := 2;
+                        bus_res2_1 <= out2(50 downto 50);
+                    else ---it's a miss
+                        state := 3;
+                        tomem1 <= out2(50 downto 50);
+                    end if;
+                end if;
             end if;
             
-            ---if out is valid, read complete, reset read enable to 0
-            if out5(50 downto 50) = "1" then
-                re2 <= '0';
-                if out2(51 downto 51) ="1" then---it's a hit
-                    --send bus_res2(an arbitor)
-                    if bus_res2_1(50 downto 50) ="0" then
-                        bus_res2_1 <= out2(50 downto 0);
-                    else
-                        tmp_brs2_1 <= out2(50 downto 0);
-                    end if;
-                else--it's a miss
-                    ---send mem request
-                    if tomem1(50 downto 50) = "0" then
-                        tomem1 <= out2(50 downto 0);
-                    else
-                        tmp_mem1 <= out2(50 downto 0);
-                    end if;
-                 end if;
-            elsif re2 = '0' and emp2 = '0' then
-                re2 <= '1';
-
+            if state =2 then
+                if brs2_ack1 = '1' then
+                    bus_res2_1 <= nilreq;
+                    state := 0;
+                end if;
             end if;
+            
+            if state =3 then
+                if mem_ack1 = '1' then
+                    tomem1 <= nilreq;
+                    state := 0;
+                end if;
+            end if;
+           
         end if;
     end process;   
     

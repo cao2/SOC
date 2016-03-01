@@ -64,7 +64,7 @@ entity AXI is
             full_b_m: out std_logic:='0';
             
             mem_wb: out std_logic_vector(50 downto 0);
-            wb_ack: in std_logic;
+            wb_ack: in std_logic
            	
                  
      );
@@ -203,7 +203,7 @@ architecture Behavioral of AXI is
         	if reset='1' then
         		we3<='0';
             elsif rising_edge(Clock) then
-            	if memres(51 downto 51)="1" then
+            	if memres(50 downto 50)="1" then
                     in3<=memres;
                     we3<='1';
                 else
@@ -214,21 +214,18 @@ architecture Behavioral of AXI is
 	end process;
 	
 	
-<<<<<<< Updated upstream
         ----stcucked here
-=======
 	    
     ---mem_res process
     mem_res_p: process(reset,Clock)
     	variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-    	variable stage: int :=0;
+    	variable stage: integer :=0;
     	variable cpu1 : std_logic;
     begin
-    	if reset= '1'; then
+    	if reset= '1' then
     		bus_res1 <= nilreq;
     		bus_res2 <= nilreq;
     	elsif rising_edge(Clock) then
-    	
     		if stage = 0 then
     			if re3 = '0' and emp3 ='0' then
     				re3 <='1';
@@ -237,10 +234,10 @@ architecture Behavioral of AXI is
     		end if;
     		
     		if stage = 1 then
-    			if out3(50 downto 50) = '1' then
+    			if out3(50 downto 50) = "1" then
     				stage :=2;
     				---response for cpu1
-    				if out3(51 downto 51) ='1'  then
+    				if out3(51 downto 51) ="1"  then
     					bus_res1_2 <= out3(50 downto 0);
     					cpu1 := '1';
     				---response for cpu2
@@ -265,12 +262,7 @@ architecture Behavioral of AXI is
     	
     end process;
     
-    
-	
-	
-	
         
->>>>>>> Stashed changes
     snp_res2_fifo: process(reset,Clock)
 	   begin	  
         	if reset='1' then
@@ -346,7 +338,50 @@ architecture Behavioral of AXI is
         end if;
     end process;    
     
-    
+    snp_res1_p: process(reset, Clock)
+        variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+    begin
+        if reset = '1' then
+            re2 <= '0';
+            bus_res2_1 <= nilreq;
+            tomem1 <= nilreq;
+            tmp_brs2_1 <= nilreq;
+            tmp_mem1 <=nilreq;
+            
+        elsif rising_edge(Clock) then
+            ---here we are waiting for the fifo
+            if brs2_ack1 ='1' then
+                bus_res2_1 <= tmp_brs2_1;
+            end if;
+            
+            if mem_ack1 = '1' then
+                tomem1 <= tmp_mem1;
+            end if;
+            
+            ---if out is valid, read complete, reset read enable to 0
+            if out5(50 downto 50) = "1" then
+                re2 <= '0';
+                if out2(51 downto 51) ="1" then---it's a hit
+                    --send bus_res2(an arbitor)
+                    if bus_res2_1(50 downto 50) ="0" then
+                        bus_res2_1 <= out2(50 downto 0);
+                    else
+                        tmp_brs2_1 <= out2(50 downto 0);
+                    end if;
+                else--it's a miss
+                    ---send mem request
+                    if tomem1(50 downto 50) = "0" then
+                        tomem1 <= out2(50 downto 0);
+                    else
+                        tmp_mem1 <= out2(50 downto 0);
+                    end if;
+                 end if;
+            elsif re2 = '0' and emp2 = '0' then
+                re2 <= '1';
+
+            end if;
+        end if;
+    end process;   
     
     
     snp_res2_p: process(reset, Clock)
@@ -371,11 +406,8 @@ architecture Behavioral of AXI is
             
             ---if out is valid, read complete, reset read enable to 0
             if out5(50 downto 50) = "1" then
-<<<<<<< Updated upstream
                 re5 <= '0';
-=======
             	
->>>>>>> Stashed changes
                 if out5(51 downto 51) ="1" then---it's a hit
                     --send bus_res1(an arbitor)
                     if bus_res1_2(50 downto 50) ="0" then
@@ -391,39 +423,49 @@ architecture Behavioral of AXI is
                         tmp_mem2 <= out5(50 downto 0);
                     end if;
                  end if;
-<<<<<<< Updated upstream
-            else
+            elsif re5 = '0' and emp5 = '0' then
                 re5 <= '1';
-=======
-                 r5 <= '0';
-            elsif r5 = '0' and emp5 = '0' then
-                r5 <= '1';
->>>>>>> Stashed changes
+
             end if;
         end if;
     end process;
-    
-    ---mem_res process
-    mem_res_p: process(reset,Clock)
-    begin
-    	if reset= '1'; then
-    		
-    	elsif rising_edge(Clock) then
-    		
-    	end if;
-    	
-    end process;
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+ 
+     --bus_res2 arbitor
+    brs2_arbitor: process(reset,Clock)
+        variable nilreq : std_logic_vector(50 downto 0):=(others => '0');
+        variable cmd: std_logic_vector( 1 downto 0);
+        variable shifter: std_logic := '0';
+    begin  
+        if reset ='1'  then
+            brs2_ack1 <= '0';
+            brs2_ack2 <= '0';
+        elsif rising_edge(Clock) then
+            brs2_ack1 <= '0';
+            brs2_ack2 <= '0';
+            cmd:= bus_res2_1(50 downto 50)& bus_res2_2(50 downto 50);
+            case cmd is
+                when "00" =>
+                when "01" =>
+                    bus_res2 <= bus_res2_2(50 downto 0);
+                    brs2_ack2 <= '1';
+                when "10" =>
+                    bus_res2 <= bus_res2_1;
+                    brs2_ack1 <= '1';
+                when "11" =>
+                    if shifter = '0' then
+                        shifter := '1';
+                        bus_res2 <= bus_res2_2;
+                        brs2_ack2 <= '1';
+                    else
+                        shifter := '0';
+                        bus_res2 <= bus_res2_1;
+                        brs2_ack1 <= '1';
+                    end if;
+                when others =>
+            end case;
+        end if;
+    end process; 
+
     --bus_res1 arbitor
     brs1_arbitor: process(reset,Clock)
         variable nilreq : std_logic_vector(50 downto 0):=(others => '0');

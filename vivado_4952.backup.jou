@@ -1,0 +1,26 @@
+#-----------------------------------------------------------
+# Vivado v2014.2 (64-bit)
+# SW Build 932637 on Wed Jun 11 13:30:22 MDT 2014
+# IP Build 924643 on Fri May 30 09:20:16 MDT 2014
+# Start of session at: Sun Feb 28 17:07:14 2016
+# Process ID: 5264
+# Log file: C:/Zynq_Book/SOC/vivado.log
+# Journal file: C:/Zynq_Book/SOC\vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_project {C:\Zynq_Book\SOC\SOC.xpr}
+update_compile_order -fileset sources_1
+update_compile_order -fileset sources_1
+launch_xsim -simset sim_1 -mode behavioral
+launch_xsim -simset sim_1 -mode behavioral
+run 50 ns
+run 50 ns
+run 50 ns
+run 50 ns
+run 50 ns
+run 50 ns
+run 50 ns
+run 50 ns
+run 50 ns
+update_compile_order -fileset sources_1
+update_compile_order -fileset sources_1

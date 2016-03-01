@@ -38,6 +38,7 @@ use xil_defaultlib.writefunction.all;
 
 entity Memory is
     Port (  Clock: in std_logic;
+            reset: in std_logic;
             full_b_m: in std_logic;
             req : in STD_LOGIC_VECTOR(51 downto 0);
             wb_req: in std_logic_vector(50 downto 0);
@@ -62,12 +63,15 @@ begin
     variable nada: std_logic_vector(51 downto 0) :=(others=>'0');
     variable bo :boolean;
     begin
-    if (rising_edge(Clock)) then
+    if reset ='1' then
+        res<=(others => '0');
+        wb_ack <='0';
+    elsif (rising_edge(Clock)) then
     --first set everything to default
-        res<=nada;
-        if req(51 downto 51) = "1" then
+       -- res<=nada;
+        if req(50 downto 50) = "1" then
         	address:=to_integer(unsigned(req(47 downto 32)));
-        	res<= req(51 downto 32) & ROM_array(address);
+        	res <= req(51 downto 32) & ROM_array(address);
         end if;
         
         if wb_req(50 downto 50) = "1" then

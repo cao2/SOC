@@ -76,7 +76,7 @@ begin
         
         if (first_time = false) then
      	  if (full_c/='1') then
-          	if (rand1 = 1) then
+          	if (rand1 = 1) then---read
             	new_req := "101" & "0000000111111111" & "11110000001111111111111111111111";
           	elsif (rand1 =2) then
             	new_req := "110"& rand2 & rand3;

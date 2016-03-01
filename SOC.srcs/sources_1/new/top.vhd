@@ -185,6 +185,7 @@ clk_gen : process
     );
     mem: entity xil_defaultlib.Memory(Behavioral) port map(   
         Clock=>Clock,
+        reset=>reset,
         req=>tomem,
         wb_req => mem_wb,
         wb_ack => wb_ack,

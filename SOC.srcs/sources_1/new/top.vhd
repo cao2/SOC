@@ -69,10 +69,8 @@ reset_proc : process
     end process;
 
 clk_gen : process
-   file logfile: text;
+  
        variable line_output:line;
-       variable logct: std_logic_vector(50 downto 0);
-       variable logct1: std_logic_vector(51 downto 0);
        variable logsr: string(8 downto 1);
        variable x : integer:=0;
    begin
@@ -82,10 +80,83 @@ clk_gen : process
      	wait for 2 ps;
      	Clock <= '1';
      	wait for 2 ps;
-     	write(line_output, cpu_req1);
-		writeline(trace_file, line_output);
-		write(line_output, cpu_req2);
-		writeline(trace_file, line_output);
+     	if cpu_req1(50 downto 50) = "1" then
+     	      logsr := "cpurq_1,";
+     	      write(line_output, logsr);
+     	      write(line_output, cpu_req1);
+		      writeline(trace_file, line_output);
+		end if;
+		if cpu_req2(50 downto 50) = "1" then
+		      logsr := "cpurq_2,";
+              write(line_output, logsr);
+		      write(line_output, cpu_req2);
+		      writeline(trace_file, line_output);
+		end if;
+     	if cpu_res1(50 downto 50) = "1" then
+     	      
+            write(line_output, cpu_res1);
+            writeline(trace_file, line_output);
+        end if;
+        if cpu_res2(50 downto 50) = "1" then
+            write(line_output, cpu_res2);
+            writeline(trace_file, line_output);
+        end if;
+        
+        if bus_req1(50 downto 50) = "1" then
+            write(line_output, bus_req1);
+            writeline(trace_file, line_output);
+        end if;
+        if bus_req2(50 downto 50) = "1" then
+            write(line_output, bus_req2);
+            writeline(trace_file, line_output);
+        end if;      
+     	if bus_res1(50 downto 50) = "1" then
+           write(line_output, bus_res1);
+           writeline(trace_file, line_output);
+        end if;
+        if bus_res2(50 downto 50) = "1" then
+           write(line_output, bus_res2);
+           writeline(trace_file, line_output);
+        end if;
+
+        if wb_req1(50 downto 50) = "1" then
+            write(line_output, wb_req1);
+            writeline(trace_file, line_output);
+        end if;
+        if wb_req2(50 downto 50) = "1" then
+            write(line_output, wb_req2);
+            writeline(trace_file, line_output);
+        end if;    
+        
+        if snoop_req1(50 downto 50) = "1" then
+            write(line_output, snoop_req1);
+            writeline(trace_file, line_output);
+        end if;
+        if snoop_req2(50 downto 50) = "1" then
+            write(line_output, snoop_req2);
+            writeline(trace_file, line_output);
+        end if;      
+         if snoop_res1(50 downto 50) = "1" then
+            write(line_output, snoop_res1);
+            writeline(trace_file, line_output);
+        end if;
+        if snoop_res2(50 downto 50) = "1" then
+            write(line_output, snoop_res2);
+            writeline(trace_file, line_output);
+        end if;
+          
+        if tomem(50 downto 50) = "1" then
+            write(line_output, tomem);
+            writeline(trace_file, line_output);           
+        end if; 
+        if memres(50 downto 50) = "1" then
+            write(line_output, memres);
+            writeline(trace_file, line_output);           
+        end if;        
+        if mem_wb(50 downto 50) = "1" then
+            write(line_output, mem_wb);
+            writeline(trace_file, line_output);           
+        end if;       	  
    end loop;
  end process;
   

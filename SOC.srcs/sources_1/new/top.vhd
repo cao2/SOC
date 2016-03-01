@@ -81,79 +81,108 @@ clk_gen : process
      	Clock <= '1';
      	wait for 2 ps;
      	if cpu_req1(50 downto 50) = "1" then
-     	      logsr := "cpurq_1,";
-     	      write(line_output, logsr);
-     	      write(line_output, cpu_req1);
-		      writeline(trace_file, line_output);
+     		logsr := "cpurq_1,";
+     		write(line_output, logsr);
+     	  	write(line_output, cpu_req1);
+		    writeline(trace_file, line_output);
 		end if;
 		if cpu_req2(50 downto 50) = "1" then
-		      logsr := "cpurq_2,";
-              write(line_output, logsr);
-		      write(line_output, cpu_req2);
-		      writeline(trace_file, line_output);
+		    logsr := "cpurq_2,";
+            write(line_output, logsr);
+			write(line_output, cpu_req2);
+		    writeline(trace_file, line_output);
 		end if;
      	if cpu_res1(50 downto 50) = "1" then
-     	      
+     	   	logsr := "cpurs_1,";
+            write(line_output, logsr);
             write(line_output, cpu_res1);
             writeline(trace_file, line_output);
         end if;
         if cpu_res2(50 downto 50) = "1" then
+        	logsr := "cpurs_2,";
+            write(line_output, logsr);
             write(line_output, cpu_res2);
             writeline(trace_file, line_output);
         end if;
         
         if bus_req1(50 downto 50) = "1" then
+        	logsr := "busrq_1,";
+            write(line_output, logsr);
             write(line_output, bus_req1);
             writeline(trace_file, line_output);
         end if;
         if bus_req2(50 downto 50) = "1" then
+        	logsr := "busrq_2,";
+            write(line_output, logsr);
             write(line_output, bus_req2);
             writeline(trace_file, line_output);
         end if;      
      	if bus_res1(50 downto 50) = "1" then
-           write(line_output, bus_res1);
-           writeline(trace_file, line_output);
+     		logsr := "busrs_1,";
+            write(line_output, logsr);
+           	write(line_output, bus_res1);
+           	writeline(trace_file, line_output);
         end if;
         if bus_res2(50 downto 50) = "1" then
-           write(line_output, bus_res2);
-           writeline(trace_file, line_output);
+        	logsr := "busrs_2,";
+            write(line_output, logsr);
+           	write(line_output, bus_res2);
+           	writeline(trace_file, line_output);
         end if;
 
         if wb_req1(50 downto 50) = "1" then
+        	logsr := "wb_rq_1,";
+            write(line_output, logsr);
             write(line_output, wb_req1);
             writeline(trace_file, line_output);
         end if;
         if wb_req2(50 downto 50) = "1" then
+        	logsr := "wb_rq_2,";
+            write(line_output, logsr);
             write(line_output, wb_req2);
             writeline(trace_file, line_output);
         end if;    
         
         if snoop_req1(50 downto 50) = "1" then
+        	logsr := "snprq_1,";
+            write(line_output, logsr);
             write(line_output, snoop_req1);
             writeline(trace_file, line_output);
         end if;
         if snoop_req2(50 downto 50) = "1" then
+        	logsr := "snprq_2,";
+            write(line_output, logsr);
             write(line_output, snoop_req2);
             writeline(trace_file, line_output);
         end if;      
          if snoop_res1(50 downto 50) = "1" then
+         	logsr := "snprs_1,";
+            write(line_output, logsr);
             write(line_output, snoop_res1);
             writeline(trace_file, line_output);
         end if;
         if snoop_res2(50 downto 50) = "1" then
+        	logsr := "snprs_2,";
+            write(line_output, logsr);
             write(line_output, snoop_res2);
             writeline(trace_file, line_output);
         end if;
           
         if tomem(50 downto 50) = "1" then
+        	logsr := "tomem__,";
+            write(line_output, logsr);
             write(line_output, tomem);
             writeline(trace_file, line_output);           
         end if; 
         if memres(50 downto 50) = "1" then
+        	logsr := "memrs__,";
+            write(line_output, logsr);
             write(line_output, memres);
             writeline(trace_file, line_output);           
         end if;        
         if mem_wb(50 downto 50) = "1" then
+        	logsr := "mem_wb_,";
+            write(line_output, logsr);
             write(line_output, mem_wb);
             writeline(trace_file, line_output);           
         end if;       	  

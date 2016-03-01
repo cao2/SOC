@@ -354,7 +354,11 @@ architecture Behavioral of AXI is
             ---tmp_mem1 <=nilreq;
         elsif rising_edge(Clock) then
         
+<<<<<<< HEAD
             if state =0 then
+=======
+        	if state =0 then
+>>>>>>> 1d060d404ae9d0c58011565908348a0e8c5f2f24
                 if re2 ='0' and emp2 ='0' then
                     re2 <= '1';
                     state := 1;

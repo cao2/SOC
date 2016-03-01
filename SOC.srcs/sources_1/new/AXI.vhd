@@ -92,14 +92,14 @@ architecture Behavioral of AXI is
 	signal mem_ack1,mem_ack2, brs1_ack1, brs1_ack2, brs2_ack1, brs2_ack2: std_logic;
 	
 	
-	signal tmp_brs1_1, tmp_brs1_2, tmp_brs2_1, tmp_brs2_2: std_logic_vector(50 downto 0);
+	signal tmp_brs1_1, tmp_brs1_2, tmp_brs2_1, tmp_brs2_2: std_logic_vector(50 downto 0):=(others => '0');
 	
 	signal tomem1, tomem2 : std_logic_vector(50 downto 0):=(others => '0');
-    signal tmp_mem1, tmp_mem2: std_logic_vector(50 downto 0);
+    signal tmp_mem1, tmp_mem2: std_logic_vector(50 downto 0):=(others => '0');
     
     
     signal wb_ack1, wb_ack2 : std_logic;
-    signal mem_wb1, mem_wb2, tmp_mem_wb1, tmp_mem_wb2 : std_logic_vector (50 downto 0);
+    signal mem_wb1, mem_wb2, tmp_mem_wb1, tmp_mem_wb2 : std_logic_vector (50 downto 0):=(others => '0');
 	
 	
  begin  
@@ -359,6 +359,7 @@ architecture Behavioral of AXI is
             
             if mem_ack1 = '1' then
                 tomem1 <= tmp_mem1;
+                tmp_mem1 <=(others => '0');
             end if;
             
             ---if out is valid, read complete, reset read enable to 0
@@ -389,46 +390,47 @@ architecture Behavioral of AXI is
     
     snp_res2_p: process(reset, Clock)
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
+        variable state: integer :=0;
     begin
         if reset = '1' then
             re5 <= '0';
             bus_res1_2 <= nilreq;
             tomem2 <= nilreq;
-            tmp_brs1_2 <= nilreq;
-            tmp_mem2 <=nilreq;
-            
+            --tmp_brs1_2 <= nilreq;
+            --tmp_mem2 <=nilreq;
         elsif rising_edge(Clock) then
-            ---here we are waiting for the fifo
-            if brs1_ack2 ='1' then
-                bus_res1_2 <= tmp_brs1_2;
+            if state =0 then
+                if re5 ='0' and emp5 ='0' then
+                    re5 <= '1';
+                    state := 1;
+                end if;
             end if;
             
-            if mem_ack2 = '1' then
-                tomem2 <= tmp_mem2;
+            if state =1 then
+                if out5(50 downto 50) = "1" then
+                    re5 <= '0';
+                    if out5(51 downto 51) = "1" then --it;s a hit
+                        state := 2;
+                        bus_res1_2 <= out5(50 downto 50);
+                    else ---it's a miss
+                        state := 3;
+                        tomem2 <= out5(50 downto 50);
+                    end if;
+                end if;
             end if;
             
-            ---if out is valid, read complete, reset read enable to 0
-            if out5(50 downto 50) = "1" then
-                re5 <= '0';
-            	
-                if out5(51 downto 51) ="1" then---it's a hit
-                    --send bus_res1(an arbitor)
-                    if bus_res1_2(50 downto 50) ="0" then
-                        bus_res1_2 <= out5(50 downto 0);
-                    else
-                        tmp_brs1_2 <= out5(50 downto 0);
-                    end if;
-                else--it's a miss
-                    ---send mem request
-                    if tomem2(50 downto 50) = "0" then
-                        tomem2 <= out5(50 downto 0);
-                    else
-                        tmp_mem2 <= out5(50 downto 0);
-                    end if;
-                 end if;
-            elsif re5 = '0' and emp5 = '0' then
-                re5 <= '1';
-
+            if state =2 then
+                if brs1_ack2 = '1' then
+                    bus_res1_2 <= nilreq;
+                    state := 0;
+                end if;
+            end if;
+            
+            if state =3 then
+                if mem_ack2 = '1' then
+                    tomem2 <= nilreq;
+                    state := 0;
+                end if;
             end if;
         end if;
     end process;
@@ -482,10 +484,10 @@ architecture Behavioral of AXI is
         elsif rising_edge(Clock) then
         	brs1_ack1 <= '0';
             brs1_ack2 <= '0';
-            bus_res1 <= nilreq;
             cmd:= bus_res1_1(50 downto 50)& bus_res1_2(50 downto 50);
             case cmd is
                 when "00" =>
+                    bus_res1 <= nilreq;
                 when "01" =>
                     bus_res1 <= bus_res1_2;
                     brs1_ack2 <= '1';
@@ -520,7 +522,8 @@ architecture Behavioral of AXI is
         elsif rising_edge(Clock) then
         	cmd:= tomem1(50 downto 50)& tomem2(50 downto 50);
             case cmd is
-                when "00" =>
+                when "00" =>   
+                    tomem <= '0'&nilreq;
                 when "01" =>
                     tomem <= '0'&tomem2;
                     mem_ack2 <= '1';
@@ -536,6 +539,7 @@ architecture Behavioral of AXI is
                     	mem_ack1 <= '1';
                     end if;
                 when others =>
+                    tomem <= '1' & nilreq;
             end case;
         end if;
     end process;    
@@ -554,22 +558,22 @@ architecture Behavioral of AXI is
         elsif rising_edge(Clock) then
         	wb_ack1 <= '0';
         	wb_ack2 <= '0';
-        	mem<= '0'&nilreq;
         	cmd:= mem_wb1(50 downto 50)& mem_wb2(50 downto 50);
             case cmd is
                 when "00" =>
+                    mem_wb <= nilreq;
                 when "01" =>
-                    mem_wb <= '0'&mem_wb2;
+                    mem_wb <= mem_wb2;
                     wb_ack2 <= '1';
                 when "10" =>
-                    mem_wb <= '1'&mem_wb1;
+                    mem_wb <= mem_wb1;
                     wb_ack1 <= '1';
                 when "11" =>
                     if shifter = '0' then
-                        mem_wb <= '0'&mem_wb2;
+                        mem_wb <= mem_wb2;
                     	wb_ack2 <= '1';
                     else
-                        mem_wb <= '1'&mem_wb1;
+                        mem_wb <= mem_wb1;
                     	wb_ack1 <= '1';
                     end if;
                 when others =>

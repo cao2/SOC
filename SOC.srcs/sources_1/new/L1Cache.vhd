@@ -213,6 +213,7 @@ begin
 			cpu_res1 <= nilreq;
 			write_req <= nilreq;
 			cache_req <= nilreq;
+			tmp_write_req <= nilreq;
 		elsif rising_edge(Clock) then
 		     --cache_req <= nilreq;
 			---reset cpu-res1
@@ -231,6 +232,8 @@ begin
 				if tmp_cache_req(50 downto 50) ="1" then
 					cache_req <= tmp_cache_req;
 					tmp_cache_req <= nilreq;
+				else
+				    cache_req <= nilreq;
 				end if;
 			end if;
 			
@@ -274,7 +277,7 @@ begin
         
 
 
-	--deal with cpu request
+	--deal with snoop request
    snp_req_p:process (reset, Clock)
         	
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
@@ -292,12 +295,13 @@ begin
 					snoop_res <= tmp_snp_res;
 					snoop_hit <= tmp_snp_hit;
 					tmp_snp_res <= nilreq;
+				else
+				    snoop_res <= nilreq;
 				end if;
 			end if;
 
 			if mem_ack2 = '1' then
 				re2 <= '0';
-				
 				---check if full_srs if full
 				if full_srs = '1' then
 				---if it's full, store it in a temporal variable first
@@ -316,6 +320,7 @@ begin
 				end if;
 			elsif re2 = '0' and emp2 = '0' then
 				re2 <= '1';
+				
 			end if;
 		end if;
 	end process;
@@ -325,36 +330,29 @@ begin
    ---deal with bus response
    	bus_res_p:process (reset, Clock)
         variable nilreq:std_logic_vector(50 downto 0):=(others => '0');
-        variable state: integer :=0
 	begin
-		if (reset = '1') then
+		if reset = '1' then
 			-- reset signals
 			cpu_res2 <= nilreq;
 			upd_req <= nilreq;
 		elsif rising_edge(Clock) then
 			---reset cpu-res2
-			if state = 0 then
-				if re3 ='0' and emp3 ='0' then
-					re3 <= '1';
-					state := 1;
-				end if;
-			end if;
-			
-			if state =1 then
-				if upd_ack ='1' then
-					re3 <= '0';
+			if ack2 = '1' then --after acknowlegement, reset it to empty request
+        		cpu_res2 <= tmp_cpu_res2;
+        		tmp_cpu_res1 <= (others => '0');
+        	end if;
+        		
+			if upd_ack = '1' then
+				re3 <= '0'; 
+				---send it back to cpu: cpu_res2
+				if cpu_res2(50 downto 50) ="1" then
+					tmp_cpu_res1 <= upd_req;
+				else
 					cpu_res2 <= upd_req;
-					state :=2;
 				end if;
+			elsif re3 = '0' and emp3 = '0' then
+				re3 <= '1';
 			end if;
-			
-			if stage =2 then
-				if ack2 = '1' then
-					cpu_res2 <= nilreq;
-					state := 0;
-				end if;
-			end if;
-			
 		end if;
 	end process;
 
@@ -380,6 +378,7 @@ begin
 			write_ack <= '0';
 			upd_ack <= '0';
 		elsif rising_edge(Clock) then
+		
 			if mem_req1(50 downto 50)="1" then
 				indx := to_integer(unsigned(mem_req1(41 downto 32)));
          		memcont:=ROM_array(indx);

@@ -70,9 +70,9 @@ begin
 						else
 							Tail := Tail + 1;
 						end if;
-						
-						
 					end if;
+				else 
+				    DataOut <= (others => '0');
 				end if;
 				
 				-- Update Empty and Full flags

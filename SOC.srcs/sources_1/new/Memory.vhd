@@ -72,6 +72,8 @@ begin
         if req(50 downto 50) = "1" then
         	address:=to_integer(unsigned(req(47 downto 32)));
         	res <= req(51 downto 32) & ROM_array(address);
+        else
+            res <= (others => '0');
         end if;
         
         if wb_req(50 downto 50) = "1" then

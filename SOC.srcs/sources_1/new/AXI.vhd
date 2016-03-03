@@ -223,22 +223,20 @@ architecture Behavioral of AXI is
     	variable cpu1 : std_logic;
     begin
     	if reset= '1' then
-    		bus_res1 <= nilreq;
-    		bus_res2 <= nilreq;
+    		bus_res1_1 <= nilreq;
+    		bus_res2_2 <= nilreq;
     	elsif rising_edge(Clock) then
     		if stage = 0 then
     			if re3 = '0' and emp3 ='0' then
     				re3 <='1';
     				stage :=1;
     			end if;
-    		end if;
-    		
-    		if stage = 1 then
+    	   elsif stage = 1 then
     			if out3(50 downto 50) = "1" then
     				stage :=2;
     				---response for cpu1
     				if out3(51 downto 51) ="1"  then
-    					bus_res1_2 <= out3(50 downto 0);
+    					bus_res1_1 <= out3(50 downto 0);
     					cpu1 := '1';
     				---response for cpu2
     				else
@@ -247,11 +245,9 @@ architecture Behavioral of AXI is
     				end if;
     				re3 <= '0';
     			end if;
-    		end if;
-    		
-    		if stage = 2 then
-    			if cpu1 ='1' and brs1_ack2 = '1' then
-    				bus_res1_2 <= nilreq;
+    		elsif stage = 2 then
+    			if cpu1 ='1' and brs1_ack1 = '1' then
+    				bus_res1_1 <= nilreq;
     				stage :=0;
     			elsif cpu1 ='0' and brs2_ack2 ='1' then
     				bus_res2_2 <= nilreq;
@@ -359,9 +355,7 @@ architecture Behavioral of AXI is
                     re2 <= '1';
                     state := 1;
                 end if;
-            end if;
-            
-            if state =1 then
+            elsif state =1 then
                 if out2(50 downto 50) = "1" then
                     re2 <= '0';
                     if out2(51 downto 51) = "1" then --it;s a hit
@@ -372,16 +366,12 @@ architecture Behavioral of AXI is
                         tomem1 <= out2(50 downto 50);
                     end if;
                 end if;
-            end if;
-            
-            if state =2 then
+            elsif state =2 then
                 if brs2_ack1 = '1' then
                     bus_res2_1 <= nilreq;
                     state := 0;
                 end if;
-            end if;
-            
-            if state =3 then
+            elsif state =3 then
                 if mem_ack1 = '1' then
                     tomem1 <= nilreq;
                     state := 0;
@@ -407,9 +397,7 @@ architecture Behavioral of AXI is
                     re5 <= '1';
                     state := 1;
                 end if;
-            end if;
-            
-            if state =1 then
+            elsif state =1 then
                 if out5(50 downto 50) = "1" then
                     re5 <= '0';
                     if out5(51 downto 51) = "1" then --it;s a hit
@@ -419,17 +407,13 @@ architecture Behavioral of AXI is
                         state := 3;
                         tomem2 <= out5(50 downto 50);
                     end if;
-                end if;
-            end if;
-            
-            if state =2 then
+                end if;  
+            elsif state =2 then
                 if brs1_ack2 = '1' then
                     bus_res1_2 <= nilreq;
                     state := 0;
-                end if;
-            end if;
-            
-            if state =3 then
+                end if;    
+            elsif state =3 then
                 if mem_ack2 = '1' then
                     tomem2 <= nilreq;
                     state := 0;

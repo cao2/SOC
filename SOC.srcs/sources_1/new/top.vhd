@@ -207,7 +207,7 @@ clk_gen : process
           cpu_req=>cpu_req2,
           full_c=>full_c2_u
       );
-    cache1: entity xil_defaultlib.L1Cache(Behavioral) port map(
+    cache1: entity work.L1Cache(Behavioral) port map(
          Clock=>Clock,
          reset=>reset,
          cpu_req=>cpu_req1,
@@ -226,7 +226,7 @@ clk_gen : process
          wb_req => wb_req1
           
     );
-     cache2: entity xil_defaultlib.L1Cache(Behavioral) port map(
+     cache2: entity work.L1Cache(Behavioral) port map(
             Clock=>Clock,
             reset=>reset,
             cpu_req=>cpu_req2,
